@@ -35,25 +35,29 @@ const Icons = {
   ),
 };
 
-/* ─────────────────── SENTENCE SPLITTER ─────────────────── */
-function splitIntoSentences(text) {
-  // Split on sentence-ending punctuation followed by a space (or end)
-  // This keeps the punctuation attached to the sentence
-  const raw = text.split(/(?<=[.!?;:])\s+/);
+/* ─────────────────── TEXT CHUNKER ─────────────────── */
+function splitIntoLines(text, maxChars = 95) {
+  const words = text.split(/\s+/);
+  const lines = [];
+  let currentLine = '';
 
-  // Merge very short fragments back (e.g. "Mr. Smith" or "Dr. Jones")
-  const merged = [];
-  for (const part of raw) {
-    const trimmed = part.trim();
-    if (!trimmed) continue;
-    if (merged.length > 0 && merged[merged.length - 1].length < 40) {
-      merged[merged.length - 1] += ' ' + trimmed;
+  for (const word of words) {
+    if (!word) continue;
+    if (currentLine.length + word.length + 1 > maxChars) {
+      if (currentLine.length > 0) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        lines.push(word);
+        currentLine = '';
+      }
     } else {
-      merged.push(trimmed);
+      currentLine = currentLine ? currentLine + ' ' + word : word;
     }
   }
+  if (currentLine) lines.push(currentLine);
 
-  return merged.length > 0 ? merged : [text];
+  return lines.length > 0 ? lines : [text];
 }
 
 /* ─────────────────── EPUB PARSER (via JSZip) ─────────────────── */
@@ -124,12 +128,11 @@ async function parseEpub(arrayBuffer) {
       const tag = node.tagName.toLowerCase();
       const isHeading = tag.startsWith('h');
 
-      // Split paragraph into sentences
-      // Match sentence-ending punctuation followed by space or end-of-string
-      const sentences = splitIntoSentences(fullText);
+      // Split paragraph into physical-length lines (approx 95 chars)
+      const textLines = splitIntoLines(fullText);
 
-      sentences.forEach((sentence) => {
-        const clean = sentence.trim();
+      textLines.forEach((lineText) => {
+        const clean = lineText.trim();
         if (clean.length > 2 && !seenTexts.has(clean)) {
           seenTexts.add(clean);
           chapterParagraphs.push({
