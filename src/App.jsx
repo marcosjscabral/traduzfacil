@@ -37,7 +37,56 @@ const Icons = {
   Download: () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
   ),
+  Library: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+  ),
+  Globe2: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><circle cx="12" cy="12" r="10"/></svg>
+  ),
+  Lock: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+  ),
 };
+
+/* ─────────────────── MOCK MARKETPLACE (SUPABASE PREVIEW) ─────────────────── */
+const MOCK_MARKETPLACE = [
+  {
+    id: 'm1',
+    title: 'Dracula',
+    author: 'Bram Stoker',
+    difficulty: 'Avançado',
+    epub_url: 'https://raw.githubusercontent.com/IDPF/epub3-samples/master/30/dracula/dracula.epub', // Only generic links work depending on CORS
+    cover_url: 'https://m.media-amazon.com/images/I/71B6uEITaWL._AC_UF1000,1000_QL80_.jpg',
+    free: true
+  },
+  {
+    id: 'm2',
+    title: 'Sherlock Holmes',
+    author: 'Arthur Conan Doyle',
+    difficulty: 'Intermediário',
+    epub_url: '',
+    cover_url: 'https://m.media-amazon.com/images/I/81B+GVD0tVL._AC_UF1000,1000_QL80_.jpg',
+    free: true
+  },
+  {
+    id: 'm3',
+    title: 'Alice in Wonderland',
+    author: 'Lewis Carroll',
+    difficulty: 'Iniciante',
+    epub_url: '',
+    cover_url: 'https://m.media-amazon.com/images/I/91tZzI+2YhL._AC_UF1000,1000_QL80_.jpg',
+    free: true
+  },
+  {
+    id: 'm4',
+    title: 'Moby Dick',
+    author: 'Herman Melville',
+    difficulty: 'Avançado',
+    epub_url: '',
+    cover_url: 'https://m.media-amazon.com/images/I/81fH+x4A1GL._AC_UF1000,1000_QL80_.jpg',
+    free: false // Premium
+  }
+];
 
 /* ─────────────────── TEXT CHUNKER ─────────────────── */
 function splitIntoLines(text, maxChars = 100) {
@@ -346,6 +395,7 @@ const App = () => {
   const [progress, setProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
   const [library, setLibrary] = useState([]);
+  const [activeHomeTab, setActiveHomeTab] = useState('library'); // 'library' | 'marketplace'
   const [autoSaveInterval, setAutoSaveInterval] = useState(1);
   const fileInputRef = useRef(null);
 
@@ -404,6 +454,37 @@ const App = () => {
     } catch (err) {
       console.error(err);
       alert('Erro ao carregar o livro salvo.');
+    } finally {
+      setLoading(false);
+    }
+  }, [applyBookState]);
+
+  /* ─── Handle Download from Public Library (Supabase Mock) ─── */
+  const handleDownloadMarketplaceEpub = useCallback(async (book) => {
+    if (!book.free) {
+      alert('Este livro é um conteúdo Premium. Futuramente você poderá assinar para desbloquear!');
+      return;
+    }
+    if (!book.epub_url) {
+      alert('O URL deste EPUB ainda não foi configurado no banco de dados (Supabase Demo).');
+      return;
+    }
+    setLoading(true);
+    try {
+      // Faz o download real do bucket do Supabase (ou url publico)
+      const res = await fetch(book.epub_url);
+      if (!res.ok) throw new Error('Falha no download. O arquivo pode não existir no Storage ou há erro de CORS.');
+      const arrayBuffer = await res.arrayBuffer();
+      
+      const { metadata: meta, chapters: chs } = await parseEpub(arrayBuffer);
+      // Forçar o titulo lindo do marketplace
+      meta.title = book.title;
+
+      const id = btoa(unescape(encodeURIComponent(meta.title + '||' + meta.creator))).replace(/[^a-zA-Z0-9]/g, '');
+      await applyBookState(id, meta, chs);
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao baixar livro: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -579,47 +660,98 @@ const App = () => {
               Todo o seu progresso é salvo offline no seu navegador.
             </p>
 
-            <div
-              className={`drop-zone ${dragActive ? 'dragover' : ''}`}
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={onDragOver}
-              onDragLeave={onDragLeave}
-              onDrop={onDrop}
-            >
-              <div className="drop-icon">
-                <Icons.Upload />
+            {/* ─── Tabs Navigation ─── */}
+            <div className="home-tabs">
+              <button 
+                className={`home-tab ${activeHomeTab === 'library' ? 'active' : ''}`}
+                onClick={() => setActiveHomeTab('library')}
+              >
+                <Icons.Library /> Minha Biblioteca e Uploads
+              </button>
+              <button 
+                className={`home-tab ${activeHomeTab === 'marketplace' ? 'active' : ''}`}
+                onClick={() => setActiveHomeTab('marketplace')}
+              >
+                <Icons.Globe2 /> Biblioteca Pública (Explorar)
+              </button>
+            </div>
+
+            {/* ─── Tab Content: LIBRARY & UPLOAD ─── */}
+            {activeHomeTab === 'library' && (
+              <div className="tab-pane fade-in">
+                <div
+                  className={`drop-zone ${dragActive ? 'dragover' : ''}`}
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={onDragOver}
+                  onDragLeave={onDragLeave}
+                  onDrop={onDrop}
+                >
+                  <div className="drop-icon">
+                    <Icons.Upload />
+                  </div>
+                  <span className="drop-text-main">Arraste seu EPUB ou clique aqui</span>
+                  <span className="drop-text-sub">Aceitamos apenas arquivos .epub</span>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".epub"
+                    hidden
+                    onChange={(e) => handleFile(e.target.files[0])}
+                  />
+                </div>
+
+                {library.length > 0 && (
+                  <div className="library-section">
+                    <h3 className="library-title">Sua Biblioteca Local</h3>
+                    <div className="library-grid">
+                      {library.map(book => (
+                        <div key={book.id} className="lib-card">
+                          <div className="lib-card-info" onClick={() => handleOpenLibraryBook(book)}>
+                            <h4 className="lib-title">{book.metadata.title}</h4>
+                            <p className="lib-author">{book.metadata.creator}</p>
+                          </div>
+                          <button className="lib-delete-btn" onClick={() => handleDeleteBook(book.id)} title="Excluir livro e traduções">
+                            <Icons.Trash />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <span className="drop-text-main">Arraste seu EPUB ou clique aqui</span>
-              <span className="drop-text-sub">Aceitamos apenas arquivos .epub</span>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".epub"
-                hidden
-                onChange={(e) => handleFile(e.target.files[0])}
-              />
-            </div>
+            )}
 
-            <div className="features-strip">
-              <div className="feature-item"><Icons.Zap /> <span>Parsing offline</span></div>
-              <div className="feature-item"><Icons.Shield /> <span>Dados no navegador</span></div>
-              <div className="feature-item"><Icons.Save /> <span>Auto-save em tempo real</span></div>
-            </div>
-
-            {/* Library Section */}
-            {library.length > 0 && (
-              <div className="library-section">
-                <h3 className="library-title">Sua Biblioteca</h3>
-                <div className="library-grid">
-                  {library.map(book => (
-                    <div key={book.id} className="lib-card">
-                      <div className="lib-card-info" onClick={() => handleOpenLibraryBook(book)}>
-                        <h4 className="lib-title">{book.metadata.title}</h4>
-                        <p className="lib-author">{book.metadata.creator}</p>
+            {/* ─── Tab Content: MARKETPLACE / PUBLIC ─── */}
+            {activeHomeTab === 'marketplace' && (
+              <div className="tab-pane fade-in">
+                <div className="marketplace-header">
+                  <h3>Descubra Clássicos</h3>
+                  <p>Inicie agora mesmo sua jornada de tradução sem precisar fazer download de nada.</p>
+                </div>
+                
+                <div className="marketplace-grid">
+                  {MOCK_MARKETPLACE.map(book => (
+                    <div key={book.id} className="mk-card">
+                      <div className="mk-cover" style={{ backgroundImage: `url(${book.cover_url})` }}>
+                        {!book.free && (
+                          <div className="mk-premium-badge">
+                            <Icons.Lock /> Premium
+                          </div>
+                        )}
                       </div>
-                      <button className="lib-delete-btn" onClick={() => handleDeleteBook(book.id)} title="Excluir livro">
-                        <Icons.Trash />
-                      </button>
+                      <div className="mk-info">
+                        <span className={`mk-diff mode-${book.difficulty.toLowerCase()}`}>
+                          {book.difficulty}
+                        </span>
+                        <h4>{book.title}</h4>
+                        <p>{book.author}</p>
+                        <button 
+                          className={`btn ${book.free ? 'btn-primary' : 'btn-secondary'} mk-action-btn`}
+                          onClick={() => handleDownloadMarketplaceEpub(book)}
+                        >
+                          {book.free ? 'Começar a Traduzir' : 'Desbloquear'}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
