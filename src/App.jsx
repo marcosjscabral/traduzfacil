@@ -399,6 +399,7 @@ const App = () => {
   const [activeHomeTab, setActiveHomeTab] = useState('library'); // 'library' | 'marketplace'
   const [autoSaveInterval, setAutoSaveInterval] = useState(1);
   const [marketplaceBooks, setMarketplaceBooks] = useState([]);
+  const [catalogError, setCatalogError] = useState(null);
   const fileInputRef = useRef(null);
 
   const hasBook = chapters.length > 0;
@@ -413,12 +414,14 @@ const App = () => {
     if (activeHomeTab === 'marketplace') {
       const fetchCatalog = async () => {
         try {
+          setCatalogError(null);
           // Busca os livros do Supabase! (E ignora erro caso a tabela esteja vazia)
           const { data, error } = await supabase.from('catalog').select('*');
           if (error) throw error;
           if (data) setMarketplaceBooks(data);
         } catch (e) {
           console.error('Erro ao buscar o catálogo:', e);
+          setCatalogError(e.message || JSON.stringify(e));
         }
       };
       fetchCatalog();
@@ -810,7 +813,15 @@ const App = () => {
                 </div>
                 
                 <div className="marketplace-grid">
-                  {marketplaceBooks.length === 0 ? (
+                  {catalogError ? (
+                    <div style={{ gridColumn: '1 / -1', color: '#ff4d4f', padding: '1rem', background: '#ffe6e6', borderRadius: '8px' }}>
+                      <strong>Erro ao ler do Supabase:</strong> {catalogError}
+                      <p style={{ marginTop: '10px', fontSize: '0.9em' }}>
+                        Dica: Vá no SQL Editor do Supabase e rode o comando: <br/>
+                        <code>ALTER TABLE catalog DISABLE ROW LEVEL SECURITY;</code>
+                      </p>
+                    </div>
+                  ) : marketplaceBooks.length === 0 ? (
                     <p style={{ textAlign: 'center', opacity: 0.6, gridColumn: '1 / -1' }}>Carregando catálogo da nuvem ou nenhum livro disponível...</p>
                   ) : (
                     marketplaceBooks.map(book => (
