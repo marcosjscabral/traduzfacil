@@ -731,6 +731,111 @@ body {
   transition: width 0.5s ease;
 }
 
+/* ============ CHAPTER NAVIGATION ============ */
+.chapter-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.chapter-nav-bottom {
+  margin-top: 32px;
+  margin-bottom: 0;
+  padding-bottom: 40px;
+}
+
+.chapter-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-white);
+  color: var(--text-body);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.chapter-nav-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.chapter-nav-btn:hover:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
+.chapter-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.chapter-nav-select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 340px;
+}
+
+.chapter-nav-select-wrapper svg {
+  position: absolute;
+  right: 10px;
+  width: 14px;
+  height: 14px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+.chapter-nav-select {
+  width: 100%;
+  padding: 8px 32px 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-page);
+  color: var(--text-body);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: all var(--transition);
+}
+
+.chapter-nav-select:hover {
+  border-color: var(--accent-border);
+}
+
+.chapter-nav-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.chapter-nav-counter {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
 /* ============ CHAPTER DIVIDER ============ */
 .chapter-divider {
   display: flex;
@@ -888,5 +993,22 @@ body {
     right: 12px;
     transform: none;
     justify-content: center;
+  }
+
+  .chapter-nav {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .chapter-nav-select-wrapper {
+    order: -1;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .chapter-nav-btn {
+    padding: 6px 10px;
+    font-size: 12px;
   }
 }

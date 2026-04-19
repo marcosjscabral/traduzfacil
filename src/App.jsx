@@ -50,6 +50,15 @@ const Icons = {
   LogOut: () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
   ),
+  ChevronLeft: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  ),
+  ChevronRight: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  ),
+  ChevronDown: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+  ),
 };
 
 /* ─────────────────── MOCK MARKETPLACE (SUPABASE PREVIEW) ─────────────────── */
@@ -404,6 +413,7 @@ const App = () => {
   const [marketplaceBooks, setMarketplaceBooks] = useState([]);
   const [catalogError, setCatalogError] = useState(null);
   const fileInputRef = useRef(null);
+  const [currentChapter, setCurrentChapter] = useState(0);
 
   const hasBook = chapters.length > 0;
 
@@ -651,8 +661,25 @@ const App = () => {
     setMetadata(null);
     setBookId(null);
     setProgress(0);
+    setCurrentChapter(0);
     // Refresh library when returning to home screen
     loadAllBooks().then(setLibrary).catch(console.warn);
+  }, []);
+
+  /* ─── Chapter navigation ─── */
+  const goToPrevChapter = useCallback(() => {
+    setCurrentChapter(prev => Math.max(0, prev - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const goToNextChapter = useCallback(() => {
+    setCurrentChapter(prev => Math.min(chapters.length - 1, prev + 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [chapters.length]);
+
+  const goToChapter = useCallback((idx) => {
+    setCurrentChapter(idx);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   /* ─── Delete book ─── */
@@ -883,23 +910,88 @@ const App = () => {
               </div>
             </div>
 
-            {/* Translation List */}
+            {/* Chapter Navigation */}
+            {chapters.length > 1 && (
+              <div className="chapter-nav">
+                <button
+                  className="chapter-nav-btn"
+                  onClick={goToPrevChapter}
+                  disabled={currentChapter === 0}
+                  title="Previous chapter"
+                >
+                  <Icons.ChevronLeft />
+                </button>
+
+                <div className="chapter-nav-select-wrapper">
+                  <select
+                    className="chapter-nav-select"
+                    value={currentChapter}
+                    onChange={(e) => goToChapter(Number(e.target.value))}
+                  >
+                    {chapters.map((ch, i) => (
+                      <option key={i} value={i}>
+                        {ch.chapterLabel} ({ch.paragraphs.length} lines)
+                      </option>
+                    ))}
+                  </select>
+                  <Icons.ChevronDown />
+                </div>
+
+                <button
+                  className="chapter-nav-btn"
+                  onClick={goToNextChapter}
+                  disabled={currentChapter === chapters.length - 1}
+                  title="Next chapter"
+                >
+                  <Icons.ChevronRight />
+                </button>
+
+                <span className="chapter-nav-counter">
+                  {currentChapter + 1} / {chapters.length}
+                </span>
+              </div>
+            )}
+
+            {/* Translation List — Paginated by Chapter */}
             <div className="translation-list">
-              {chapters.map((ch, ci) => (
-                <React.Fragment key={ci}>
+              {chapters[currentChapter] && (
+                <React.Fragment key={currentChapter}>
                   <div className="chapter-divider">
-                    <span className="chapter-label">{ch.chapterLabel}</span>
+                    <span className="chapter-label">{chapters[currentChapter].chapterLabel}</span>
                   </div>
-                  {ch.paragraphs.map((p, pi) => (
+                  {chapters[currentChapter].paragraphs.map((p, pi) => (
                     <TranslationRow
                       key={p.id}
                       paragraph={p}
-                      onTranslationChange={(val) => handleTranslationChange(ci, pi, val)}
+                      onTranslationChange={(val) => handleTranslationChange(currentChapter, pi, val)}
                     />
                   ))}
                 </React.Fragment>
-              ))}
+              )}
             </div>
+
+            {/* Bottom Chapter Navigation */}
+            {chapters.length > 1 && (
+              <div className="chapter-nav chapter-nav-bottom">
+                <button
+                  className="chapter-nav-btn"
+                  onClick={goToPrevChapter}
+                  disabled={currentChapter === 0}
+                >
+                  <Icons.ChevronLeft /> Previous
+                </button>
+                <span className="chapter-nav-counter">
+                  {currentChapter + 1} / {chapters.length}
+                </span>
+                <button
+                  className="chapter-nav-btn"
+                  onClick={goToNextChapter}
+                  disabled={currentChapter === chapters.length - 1}
+                >
+                  Next <Icons.ChevronRight />
+                </button>
+              </div>
+            )}
           </section>
         )}
       </main>
