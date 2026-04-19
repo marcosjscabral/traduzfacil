@@ -398,6 +398,7 @@ const App = () => {
   const [library, setLibrary] = useState([]);
   const [activeHomeTab, setActiveHomeTab] = useState('library'); // 'library' | 'marketplace'
   const [autoSaveInterval, setAutoSaveInterval] = useState(1);
+  const [marketplaceBooks, setMarketplaceBooks] = useState([]);
   const fileInputRef = useRef(null);
 
   const hasBook = chapters.length > 0;
@@ -406,6 +407,23 @@ const App = () => {
   useEffect(() => {
     loadAllBooks().then(setLibrary).catch(console.warn);
   }, []);
+
+  /* ─── Fetch Supabase Catalog ─── */
+  useEffect(() => {
+    if (activeHomeTab === 'marketplace') {
+      const fetchCatalog = async () => {
+        try {
+          // Busca os livros do Supabase! (E ignora erro caso a tabela esteja vazia)
+          const { data, error } = await supabase.from('catalog').select('*');
+          if (error) throw error;
+          if (data) setMarketplaceBooks(data);
+        } catch (e) {
+          console.error('Erro ao buscar o catálogo:', e);
+        }
+      };
+      fetchCatalog();
+    }
+  }, [activeHomeTab]);
 
   /* ─── Compute progress ─── */
   const computeProgress = useCallback((chs) => {
@@ -792,30 +810,34 @@ const App = () => {
                 </div>
                 
                 <div className="marketplace-grid">
-                  {MOCK_MARKETPLACE.map(book => (
-                    <div key={book.id} className="mk-card">
-                      <div className="mk-cover" style={{ backgroundImage: `url(${book.cover_url})` }}>
-                        {!book.free && (
-                          <div className="mk-premium-badge">
-                            <Icons.Lock /> Premium
-                          </div>
-                        )}
+                  {marketplaceBooks.length === 0 ? (
+                    <p style={{ textAlign: 'center', opacity: 0.6, gridColumn: '1 / -1' }}>Carregando catálogo da nuvem ou nenhum livro disponível...</p>
+                  ) : (
+                    marketplaceBooks.map(book => (
+                      <div key={book.id} className="mk-card">
+                        <div className="mk-cover" style={{ backgroundImage: `url(${book.cover_url || ''})` }}>
+                          {!book.free && (
+                            <div className="mk-premium-badge">
+                              <Icons.Lock /> Premium
+                            </div>
+                          )}
+                        </div>
+                        <div className="mk-info">
+                          <span className={`mk-diff mode-${(book.difficulty || 'iniciante').toLowerCase()}`}>
+                            {book.difficulty || 'Iniciante'}
+                          </span>
+                          <h4>{book.title}</h4>
+                          <p>{book.author}</p>
+                          <button 
+                            className={`btn ${book.free ? 'btn-primary' : 'btn-secondary'} mk-action-btn`}
+                            onClick={() => handleDownloadMarketplaceEpub(book)}
+                          >
+                            {book.free ? 'Começar a Traduzir' : 'Desbloquear'}
+                          </button>
+                        </div>
                       </div>
-                      <div className="mk-info">
-                        <span className={`mk-diff mode-${book.difficulty.toLowerCase()}`}>
-                          {book.difficulty}
-                        </span>
-                        <h4>{book.title}</h4>
-                        <p>{book.author}</p>
-                        <button 
-                          className={`btn ${book.free ? 'btn-primary' : 'btn-secondary'} mk-action-btn`}
-                          onClick={() => handleDownloadMarketplaceEpub(book)}
-                        >
-                          {book.free ? 'Começar a Traduzir' : 'Desbloquear'}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             )}
