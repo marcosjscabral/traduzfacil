@@ -36,7 +36,7 @@ const Icons = {
 };
 
 /* ─────────────────── TEXT CHUNKER ─────────────────── */
-function splitIntoLines(text, maxChars = 65) {
+function splitIntoLines(text, maxChars = 100) {
   const words = text.split(/\s+/);
   const lines = [];
   let currentLine = '';
@@ -63,6 +63,18 @@ function splitIntoLines(text, maxChars = 65) {
 /* ─────────────────── EPUB PARSER (via JSZip) ─────────────────── */
 async function parseEpub(arrayBuffer) {
   const zip = await JSZip.loadAsync(arrayBuffer);
+
+  // 0. Check for TraduzFacil restore state!
+  const stateFile = zip.file('META-INF/traduzfacil.json');
+  if (stateFile) {
+    const jsonStr = await stateFile.async('text');
+    try {
+      const stateData = JSON.parse(jsonStr);
+      if (stateData.metadata && stateData.chapters) {
+        return stateData;
+      }
+    } catch(e) { console.warn("Falha ao ler o backup do projeto no epub."); }
+  }
 
   // 1. Find the container.xml to locate the .opf file
   const containerXml = await zip.file('META-INF/container.xml')?.async('text');
@@ -241,25 +253,75 @@ async function loadTranslations(bookId) {
   });
 }
 
-/* ─────────────────── EXPORT TRANSLATIONS ─────────────────── */
-function exportTranslations(metadata, chapters) {
-  let output = `# ${metadata.title}\n## ${metadata.creator}\n\n---\n\n`;
-  chapters.forEach(ch => {
-    output += `### ${ch.chapterLabel}\n\n`;
+/* ─────────────────── EXPORT TRANSLATIONS AS EPUB ─────────────────── */
+async function exportAsEpub(metadata, chapters) {
+  const zip = new JSZip();
+
+  // Mimetype must be uncompressed
+  zip.file("mimetype", "application/epub+zip");
+
+  // META-INF
+  zip.folder("META-INF").file("container.xml", `<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`);
+
+  // INJECT APP STATE TO ALLOW CONTINUING FROM OTHER COMPUTER
+  zip.folder("META-INF").file("traduzfacil.json", JSON.stringify({ metadata, chapters }));
+
+  // OEBPS Content
+  const oebps = zip.folder("OEBPS");
+  let manifestItems = '';
+  let spineItems = '';
+
+  chapters.forEach((ch, idx) => {
+    let xhtml = `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>${ch.chapterLabel}</title></head>
+<body><h2>${ch.chapterLabel}</h2>`;
+
     ch.paragraphs.forEach(p => {
-      output += `> ${p.source}\n`;
-      output += `${p.translation || '(sem tradução)'}\n\n`;
+      // Use translation if filled, else fallback to source
+      // This is what renders when they read it normally on a Kindle/App
+      const text = p.translation && p.translation.trim() ? p.translation : p.source;
+      if (p.isHeading) {
+        xhtml += `<h3>${text}</h3>`;
+      } else {
+        xhtml += `<p>${text}</p>`;
+      }
     });
-    output += `---\n\n`;
+
+    xhtml += `</body></html>`;
+    oebps.file(`chapter_${idx}.xhtml`, xhtml);
+    manifestItems += `<item id="ch_${idx}" href="chapter_${idx}.xhtml" media-type="application/xhtml+xml"/>\n`;
+    spineItems += `<itemref idref="ch_${idx}"/>\n`;
   });
 
-  const blob = new Blob([output], { type: 'text/markdown;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
+  const opf = `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="BookId" version="2.0">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>${metadata.title} (Traduzido)</dc:title>
+    <dc:creator>${metadata.creator}</dc:creator>
+    <dc:language>pt</dc:language>
+  </metadata>
+  <manifest>
+    ${manifestItems}
+  </manifest>
+  <spine>
+    ${spineItems}
+  </spine>
+</package>`;
+
+  oebps.file("content.opf", opf);
+
+  const content = await zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
   const a = document.createElement('a');
-  a.href = url;
-  a.download = `${metadata.title.replace(/[^a-zA-Z0-9]/g, '_')}_traducao.md`;
+  a.href = URL.createObjectURL(content);
+  a.download = `${metadata.title.replace(/[^a-zA-Z0-9]/g, '_')}_traduzido.epub`;
   a.click();
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(a.href);
 }
 
 /* ─────────────────── AUTO-RESIZE TEXTAREA ─────────────────── */
@@ -459,8 +521,8 @@ const App = () => {
         <div className="header-actions">
           {hasBook && (
             <>
-              <button className="btn btn-ghost" onClick={() => exportTranslations(metadata, chapters)} title="Exportar tradução">
-                <Icons.Download /> Exportar
+              <button className="btn btn-ghost" onClick={() => exportAsEpub(metadata, chapters)} title="Exportar novo EPUB">
+                <Icons.Download /> Exportar EPUB
               </button>
               <button className="btn btn-secondary" onClick={clearBook}>
                 <Icons.Trash /> Sair
