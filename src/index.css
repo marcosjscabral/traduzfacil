@@ -108,7 +108,29 @@ body {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+}
+
+.auto-save-select {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-body);
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auto-save-select:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.auto-save-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
 }
 
 /* ============ STATUS PILL ============ */

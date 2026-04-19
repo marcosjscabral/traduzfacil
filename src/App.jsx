@@ -337,13 +337,13 @@ const App = () => {
   const [chapters, setChapters] = useState([]);
   const [metadata, setMetadata] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState('Sincronizado');
+  const [status, setStatus] = useState('Salvo');
   const [bookId, setBookId] = useState(null);
   const [progress, setProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
   const [library, setLibrary] = useState([]);
+  const [autoSaveInterval, setAutoSaveInterval] = useState(1);
   const fileInputRef = useRef(null);
-  const saveTimerRef = useRef(null);
 
   const hasBook = chapters.length > 0;
 
@@ -428,10 +428,34 @@ const App = () => {
     }
   }, [applyBookState]);
 
+  /* ─── Manual Save Logic ─── */
+  const chaptersRef = useRef(chapters);
+  useEffect(() => { chaptersRef.current = chapters; }, [chapters]);
+
+  const handleManualSave = useCallback(async () => {
+    if (!bookId) return;
+    setStatus('Salvando...');
+    try {
+      await saveBookData(bookId, metadata, chaptersRef.current);
+      setStatus('Salvo');
+    } catch (e) {
+      console.error('Falha ao salvar:', e);
+      setStatus('Modificado');
+    }
+  }, [bookId, metadata]);
+
+  /* ─── Auto-Save Interval ─── */
+  useEffect(() => {
+    if (autoSaveInterval === 0 || status === 'Salvo') return;
+    const interval = setInterval(() => {
+      if (status === 'Modificado') handleManualSave();
+    }, autoSaveInterval * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [autoSaveInterval, status, handleManualSave]);
+
   /* ─── Translation change ─── */
   const handleTranslationChange = useCallback((chapterIdx, paraIdx, value) => {
-    setStatus('Salvando...');
-
+    setStatus('Modificado');
     setChapters(prev => {
       const next = prev.map((ch, ci) => {
         if (ci !== chapterIdx) return ch;
@@ -446,22 +470,7 @@ const App = () => {
       computeProgress(next);
       return next;
     });
-
-    // Debounced save to IndexedDB
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(async () => {
-      try {
-        const ch = chapters[chapterIdx] || {};
-        const p = (ch.paragraphs || [])[paraIdx];
-        if (p && bookId) {
-          await saveTranslation(bookId, p.id, value);
-        }
-      } catch (e) {
-        console.warn('Falha ao salvar:', e);
-      }
-      setStatus('Sincronizado');
-    }, 600);
-  }, [bookId, chapters, computeProgress]);
+  }, [computeProgress]);
 
   /* ─── Drag & Drop ─── */
   const onDragOver = useCallback((e) => { e.preventDefault(); setDragActive(true); }, []);
@@ -521,6 +530,26 @@ const App = () => {
         <div className="header-actions">
           {hasBook && (
             <>
+              <select 
+                value={autoSaveInterval} 
+                onChange={(e) => setAutoSaveInterval(Number(e.target.value))}
+                className="auto-save-select"
+                title="Intervalo de salvamento automático"
+              >
+                <option value={0}>Auto-save: Desligado</option>
+                <option value={1}>Auto-save: 1 min</option>
+                <option value={2}>Auto-save: 2 min</option>
+                <option value={5}>Auto-save: 5 min</option>
+                <option value={10}>Auto-save: 10 min</option>
+              </select>
+              <button 
+                className="btn btn-ghost manual-save-btn" 
+                onClick={handleManualSave} 
+                disabled={status === 'Salvo'}
+                title="Salvar Manualmente"
+              >
+                <Icons.Save /> {status}
+              </button>
               <button className="btn btn-ghost" onClick={() => exportAsEpub(metadata, chapters)} title="Exportar novo EPUB">
                 <Icons.Download /> Exportar EPUB
               </button>
@@ -529,10 +558,6 @@ const App = () => {
               </button>
             </>
           )}
-          <div className="status-pill">
-            <span className={`status-dot ${status === 'Sincronizado' ? 'synced' : 'saving'}`} />
-            {status}
-          </div>
         </div>
       </header>
 
@@ -645,13 +670,7 @@ const App = () => {
         )}
       </main>
 
-      {/* ─── Floating Bar ─── */}
-      {hasBook && (
-        <div className="floating-bar glass">
-          <Icons.Save />
-          <span>Backup local ativo em tempo real</span>
-        </div>
-      )}
+      {/* ─── Floating Bar (Removed due to header manual save config) ─── */}
     </div>
   );
 };
@@ -659,16 +678,30 @@ const App = () => {
 /* ─────────────────── TRANSLATION ROW (memoized) ─────────────────── */
 const TranslationRow = React.memo(({ paragraph, onTranslationChange }) => {
   const textareaRef = useRef(null);
+  const [localVal, setLocalVal] = useState(paragraph.translation || '');
 
+  // Synchronize local state if parent changes (e.g. loading a new book)
   useEffect(() => {
-    if (textareaRef.current && paragraph.translation) {
-      autoResize(textareaRef.current);
-    }
+    setLocalVal(paragraph.translation || '');
   }, [paragraph.translation]);
 
+  // Adjust height on mount/update
+  useEffect(() => {
+    if (textareaRef.current) {
+      autoResize(textareaRef.current);
+    }
+  }, [localVal]);
+
   const handleInput = (e) => {
+    const val = e.target.value;
+    setLocalVal(val);
     autoResize(e.target);
-    onTranslationChange(e.target.value);
+  };
+
+  const handleBlur = () => {
+    if (localVal !== paragraph.translation) {
+      onTranslationChange(localVal);
+    }
   };
 
   return (
@@ -678,11 +711,12 @@ const TranslationRow = React.memo(({ paragraph, onTranslationChange }) => {
       </p>
       <textarea
         ref={textareaRef}
-        className={`translation-input ${paragraph.translation ? 'has-content' : ''}`}
+        className={`translation-input ${localVal ? 'has-content' : ''}`}
         placeholder="Traduza aqui..."
-        value={paragraph.translation}
+        value={localVal}
         onInput={handleInput}
         onChange={handleInput}
+        onBlur={handleBlur}
         rows={1}
       />
     </div>
