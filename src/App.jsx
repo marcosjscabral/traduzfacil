@@ -55,7 +55,7 @@ const MOCK_MARKETPLACE = [
     id: 'm1',
     title: 'Dracula',
     author: 'Bram Stoker',
-    difficulty: 'Avançado',
+    difficulty: 'Advanced',
     epub_url: 'https://raw.githubusercontent.com/IDPF/epub3-samples/master/30/dracula/dracula.epub', // Only generic links work depending on CORS
     cover_url: 'https://m.media-amazon.com/images/I/71B6uEITaWL._AC_UF1000,1000_QL80_.jpg',
     free: true
@@ -64,7 +64,7 @@ const MOCK_MARKETPLACE = [
     id: 'm2',
     title: 'Sherlock Holmes',
     author: 'Arthur Conan Doyle',
-    difficulty: 'Intermediário',
+    difficulty: 'Intermediate',
     epub_url: '',
     cover_url: 'https://m.media-amazon.com/images/I/81B+GVD0tVL._AC_UF1000,1000_QL80_.jpg',
     free: true
@@ -73,7 +73,7 @@ const MOCK_MARKETPLACE = [
     id: 'm3',
     title: 'Alice in Wonderland',
     author: 'Lewis Carroll',
-    difficulty: 'Iniciante',
+    difficulty: 'Beginner',
     epub_url: '',
     cover_url: 'https://m.media-amazon.com/images/I/91tZzI+2YhL._AC_UF1000,1000_QL80_.jpg',
     free: true
@@ -82,7 +82,7 @@ const MOCK_MARKETPLACE = [
     id: 'm4',
     title: 'Moby Dick',
     author: 'Herman Melville',
-    difficulty: 'Avançado',
+    difficulty: 'Advanced',
     epub_url: '',
     cover_url: 'https://m.media-amazon.com/images/I/81fH+x4A1GL._AC_UF1000,1000_QL80_.jpg',
     free: false // Premium
@@ -127,32 +127,32 @@ async function parseEpub(arrayBuffer) {
       if (stateData.metadata && stateData.chapters) {
         return stateData;
       }
-    } catch(e) { console.warn("Falha ao ler o backup do projeto no epub."); }
+    } catch(e) { console.warn("Failed to read project backup in the epub."); }
   }
 
   // 1. Find the container.xml to locate the .opf file
   const containerXml = await zip.file('META-INF/container.xml')?.async('text');
-  if (!containerXml) throw new Error('EPUB inválido: container.xml não encontrado');
+  if (!containerXml) throw new Error('Invalid EPUB: container.xml not found');
 
   const parser = new DOMParser();
   const containerDoc = parser.parseFromString(containerXml, 'application/xml');
   const rootfilePath = containerDoc.querySelector('rootfile')?.getAttribute('full-path');
-  if (!rootfilePath) throw new Error('EPUB inválido: rootfile não encontrado');
+  if (!rootfilePath) throw new Error('Invalid EPUB: rootfile not found');
 
   // Base directory for resolving relative paths
   const opfDir = rootfilePath.includes('/') ? rootfilePath.substring(0, rootfilePath.lastIndexOf('/') + 1) : '';
 
   // 2. Parse the OPF to find metadata and spine order
   const opfText = await zip.file(rootfilePath)?.async('text');
-  if (!opfText) throw new Error('EPUB inválido: OPF não encontrado');
+  if (!opfText) throw new Error('Invalid EPUB: OPF not found');
   const opfDoc = parser.parseFromString(opfText, 'application/xml');
 
   // Metadata
   const titleEl = opfDoc.querySelector('metadata title, metadata dc\\:title');
   const creatorEl = opfDoc.querySelector('metadata creator, metadata dc\\:creator');
   const metadata = {
-    title: titleEl?.textContent || 'Título Desconhecido',
-    creator: creatorEl?.textContent || 'Autor Desconhecido',
+    title: titleEl?.textContent || 'Unknown Title',
+    creator: creatorEl?.textContent || 'Unknown Author',
   };
 
   // Build manifest map: id -> href
@@ -215,7 +215,7 @@ async function parseEpub(arrayBuffer) {
     if (chapterParagraphs.length > 0) {
       allParagraphs.push({
         chapterIndex,
-        chapterLabel: `Capítulo ${chapterIndex + 1}`,
+        chapterLabel: `Chapter ${chapterIndex + 1}`,
         paragraphs: chapterParagraphs,
       });
       chapterIndex++;
@@ -356,7 +356,7 @@ async function exportAsEpub(metadata, chapters) {
   const opf = `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="BookId" version="2.0">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-    <dc:title>${metadata.title} (Traduzido)</dc:title>
+    <dc:title>${metadata.title} (Translated)</dc:title>
     <dc:creator>${metadata.creator}</dc:creator>
     <dc:language>pt</dc:language>
   </metadata>
@@ -373,7 +373,7 @@ async function exportAsEpub(metadata, chapters) {
   const content = await zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(content);
-  a.download = `${metadata.title.replace(/[^a-zA-Z0-9]/g, '_')}_traduzido.epub`;
+  a.download = `${metadata.title.replace(/[^a-zA-Z0-9]/g, '_')}_translated.epub`;
   a.click();
   URL.revokeObjectURL(a.href);
 }
@@ -391,7 +391,7 @@ const App = () => {
   const [chapters, setChapters] = useState([]);
   const [metadata, setMetadata] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState('Salvo');
+  const [status, setStatus] = useState('Saved');
   const [bookId, setBookId] = useState(null);
   const [progress, setProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
@@ -415,12 +415,12 @@ const App = () => {
       const fetchCatalog = async () => {
         try {
           setCatalogError(null);
-          // Busca os livros do Supabase! (E ignora erro caso a tabela esteja vazia)
+          // Fetch books from Supabase database!
           const { data, error } = await supabase.from('catalog').select('*');
           if (error) throw error;
           if (data) setMarketplaceBooks(data);
         } catch (e) {
-          console.error('Erro ao buscar o catálogo:', e);
+          console.error('Error fetching catalog:', e);
           setCatalogError(e.message || JSON.stringify(e));
         }
       };
@@ -456,7 +456,7 @@ const App = () => {
         });
       });
     } catch (e) {
-      console.warn('Erro ao carregar traduções salvas:', e);
+      console.warn('Error loading saved translations:', e);
     }
 
     setChapters(chs);
@@ -475,7 +475,7 @@ const App = () => {
       await applyBookState(book.id, book.metadata, book.chapters);
     } catch (err) {
       console.error(err);
-      alert('Erro ao carregar o livro salvo.');
+      alert('Error loading the saved book.');
     } finally {
       setLoading(false);
     }
@@ -484,18 +484,18 @@ const App = () => {
   /* ─── Handle Download from Public Library (Supabase Mock) ─── */
   const handleDownloadMarketplaceEpub = useCallback(async (book) => {
     if (!book.free) {
-      alert('Este livro é um conteúdo Premium. Futuramente você poderá assinar para desbloquear!');
+      alert('This book is Premium content. You will be able to subscribe to unlock it in the future!');
       return;
     }
     if (!book.epub_url) {
-      alert('O URL deste EPUB ainda não foi configurado no banco de dados (Supabase Demo).');
+      alert('The URL of this EPUB has not been configured in the database (Supabase Demo) yet.');
       return;
     }
     setLoading(true);
     try {
       // Faz o download real do bucket do Supabase (ou url publico)
       const res = await fetch(book.epub_url);
-      if (!res.ok) throw new Error('Falha no download. O arquivo pode não existir no Storage ou há erro de CORS.');
+      if (!res.ok) throw new Error('Download failed. The file may not exist in Storage or there is a CORS error.');
       const arrayBuffer = await res.arrayBuffer();
       
       const { metadata: meta, chapters: chs } = await parseEpub(arrayBuffer);
@@ -506,7 +506,7 @@ const App = () => {
       await applyBookState(id, meta, chs);
     } catch (err) {
       console.error(err);
-      alert('Erro ao baixar livro: ' + err.message);
+      alert('Error downloading book: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -515,7 +515,7 @@ const App = () => {
   /* ─── Handle file ─── */
   const handleFile = useCallback(async (file) => {
     if (!file || !file.name.toLowerCase().endsWith('.epub')) {
-      alert('Por favor, selecione um arquivo .epub válido.');
+      alert('Please select a valid .epub file.');
       return;
     }
 
@@ -528,8 +528,8 @@ const App = () => {
       const id = btoa(unescape(encodeURIComponent(meta.title + '||' + meta.creator))).replace(/[^a-zA-Z0-9]/g, '');
       await applyBookState(id, meta, chs);
     } catch (err) {
-      console.error('Erro ao processar EPUB:', err);
-      alert('Não foi possível carregar este EPUB. Verifique se o arquivo é válido.');
+      console.error('Error processing EPUB:', err);
+      alert('Could not load this EPUB. Make sure the file is valid.');
     } finally {
       setLoading(false);
     }
@@ -541,21 +541,21 @@ const App = () => {
 
   const handleManualSave = useCallback(async () => {
     if (!bookId) return;
-    setStatus('Salvando...');
+    setStatus('Saving...');
     try {
       await saveBookData(bookId, metadata, chaptersRef.current);
-      setStatus('Salvo');
+      setStatus('Saved');
     } catch (e) {
-      console.error('Falha ao salvar:', e);
-      setStatus('Modificado');
+      console.error('Failed to save:', e);
+      setStatus('Modified');
     }
   }, [bookId, metadata]);
 
   /* ─── Auto-Save Interval ─── */
   useEffect(() => {
-    if (autoSaveInterval === 0 || status === 'Salvo') return;
+    if (autoSaveInterval === 0 || status === 'Saved') return;
     const interval = setInterval(() => {
-      if (status === 'Modificado') handleManualSave();
+      if (status === 'Modified') handleManualSave();
     }, autoSaveInterval * 60 * 1000);
     return () => clearInterval(interval);
   }, [autoSaveInterval, status, handleManualSave]);
@@ -563,7 +563,7 @@ const App = () => {
   /* ─── Publish to Supabase Public Library ─── */
   const publishToPublicLibrary = useCallback(async () => {
     if (!metadata || chapters.length === 0) return;
-    setStatus('Publicando...');
+    setStatus('Publishing...');
     
     try {
       // 1. Inserir Livro na tabela 'books'
@@ -571,7 +571,7 @@ const App = () => {
         .from('books')
         .insert([{
           title: metadata.title,
-          author: metadata.creator || 'Desconhecido'
+          author: metadata.creator || 'Unknown'
         }])
         .select()
         .single();
@@ -604,18 +604,18 @@ const App = () => {
         if (txtErr) throw txtErr;
       }
       
-      setStatus('Salvo');
-      alert('Livro publicado com sucesso na Biblioteca Pública (Supabase)!');
+      setStatus('Saved');
+      alert('Book successfully published to the Public Library (Supabase)!');
     } catch (e) {
-      console.error('Falha ao publicar:', e);
-      alert('Erro ao publicar na nuvem: ' + e.message);
-      setStatus('Modificado');
+      console.error('Failed to publish:', e);
+      alert('Error publishing to the cloud: ' + e.message);
+      setStatus('Modified');
     }
   }, [metadata, chapters]);
 
   /* ─── Translation change ─── */
   const handleTranslationChange = useCallback((chapterIdx, paraIdx, value) => {
-    setStatus('Modificado');
+    setStatus('Modified');
     setChapters(prev => {
       const next = prev.map((ch, ci) => {
         if (ci !== chapterIdx) return ch;
@@ -654,7 +654,7 @@ const App = () => {
 
   /* ─── Delete book ─── */
   const handleDeleteBook = useCallback(async (id) => {
-    if (window.confirm('Tem certeza que deseja apagar este livro e todo o progresso de tradução?')) {
+    if (window.confirm('Are you sure you want to delete this book and all translation progress?')) {
       await deleteBookData(id);
       const newLib = await loadAllBooks();
       setLibrary(newLib);
@@ -672,7 +672,7 @@ const App = () => {
       <div className="app-container">
         <div className="loading-screen">
           <div className="spinner-ring" />
-          <p>Extraindo páginas do livro...</p>
+          <p>Extracting pages from the book...</p>
         </div>
       </div>
     );
@@ -685,7 +685,7 @@ const App = () => {
       <header className="app-header">
         <div className="header-brand">
           <Icons.Globe />
-          <h1 className="gradient-text">TraduzFácil<span>Pro</span></h1>
+          <h1 className="gradient-text">Traxbook<span></span></h1>
         </div>
         <div className="header-actions">
           {hasBook && (
@@ -694,35 +694,35 @@ const App = () => {
                 value={autoSaveInterval} 
                 onChange={(e) => setAutoSaveInterval(Number(e.target.value))}
                 className="auto-save-select"
-                title="Intervalo de salvamento automático"
+                title="Auto-save interval"
               >
-                <option value={0}>Auto-save: Desligado</option>
+                <option value={0}>Auto-save: Off</option>
                 <option value={1}>Auto-save: 1 min</option>
                 <option value={2}>Auto-save: 2 min</option>
                 <option value={5}>Auto-save: 5 min</option>
                 <option value={10}>Auto-save: 10 min</option>
               </select>
               <button 
-                className={`btn btn-ghost manual-save-btn ${status === 'Modificado' ? 'is-modified' : ''}`} 
+                className={`btn btn-ghost manual-save-btn ${status === 'Modified' ? 'is-modified' : ''}`} 
                 onClick={handleManualSave} 
-                disabled={status === 'Salvo' || status === 'Salvando...'}
-                title={status === 'Modificado' ? "Salvar alterações" : "Tudo salvo"}
+                disabled={status === 'Saved' || status === 'Saving...'}
+                title={status === 'Modified' ? "Save changes" : "All saved"}
               >
-                <Icons.Save /> {status === 'Modificado' ? 'Salvar' : status}
+                <Icons.Save /> {status === 'Modified' ? 'Save' : status}
               </button>
               <button 
                 className="btn btn-ghost" 
                 onClick={publishToPublicLibrary} 
-                disabled={status === 'Publicando...'}
-                title="Publicar este livro na biblioteca online"
+                disabled={status === 'Publishing...'}
+                title="Publish this book to the online library"
               >
-                <Icons.Globe2 /> Publicar na Nuvem
+                <Icons.Globe2 /> Publish to Cloud
               </button>
-              <button className="btn btn-ghost" onClick={() => exportAsEpub(metadata, chapters)} title="Exportar novo EPUB">
-                <Icons.Download /> Exportar EPUB
+              <button className="btn btn-ghost" onClick={() => exportAsEpub(metadata, chapters)} title="Export new EPUB">
+                <Icons.Download /> Export EPUB
               </button>
               <button className="btn btn-secondary" onClick={clearBook}>
-                <Icons.Trash /> Sair
+                <Icons.Trash /> Exit
               </button>
             </>
           )}
@@ -735,12 +735,12 @@ const App = () => {
           /* ─── Welcome Screen ─── */
           <section className="welcome-section">
             <h2>
-              Transforme sua leitura em{' '}
-              <span className="gradient-text">trabalho criativo.</span>
+              Turn any EPUB into a{' '}
+              <span className="gradient-text">personalized translation workout.</span>
             </h2>
             <p>
-              Carregue seu arquivo EPUB e comece a traduzir instantaneamente.
-              Todo o seu progresso é salvo offline no seu navegador.
+              Load your EPUB file and start translating instantly.
+              All your progress is saved offline in your browser.
             </p>
 
             {/* ─── Tabs Navigation ─── */}
@@ -749,13 +749,13 @@ const App = () => {
                 className={`home-tab ${activeHomeTab === 'library' ? 'active' : ''}`}
                 onClick={() => setActiveHomeTab('library')}
               >
-                <Icons.Library /> Minha Biblioteca e Uploads
+                <Icons.Library /> My Library and Uploads
               </button>
               <button 
                 className={`home-tab ${activeHomeTab === 'marketplace' ? 'active' : ''}`}
                 onClick={() => setActiveHomeTab('marketplace')}
               >
-                <Icons.Globe2 /> Biblioteca Pública (Explorar)
+                <Icons.Globe2 /> Public Library (Explore)
               </button>
             </div>
 
@@ -772,8 +772,8 @@ const App = () => {
                   <div className="drop-icon">
                     <Icons.Upload />
                   </div>
-                  <span className="drop-text-main">Arraste seu EPUB ou clique aqui</span>
-                  <span className="drop-text-sub">Aceitamos apenas arquivos .epub</span>
+                  <span className="drop-text-main">Drag your EPUB or click here</span>
+                  <span className="drop-text-sub">Only .epub files are accepted</span>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -785,7 +785,7 @@ const App = () => {
 
                 {library.length > 0 && (
                   <div className="library-section">
-                    <h3 className="library-title">Sua Biblioteca Local</h3>
+                    <h3 className="library-title">Your Local Library</h3>
                     <div className="library-grid">
                       {library.map(book => (
                         <div key={book.id} className="lib-card">
@@ -793,7 +793,7 @@ const App = () => {
                             <h4 className="lib-title">{book.metadata.title}</h4>
                             <p className="lib-author">{book.metadata.creator}</p>
                           </div>
-                          <button className="lib-delete-btn" onClick={() => handleDeleteBook(book.id)} title="Excluir livro e traduções">
+                          <button className="lib-delete-btn" onClick={() => handleDeleteBook(book.id)} title="Delete book and translations">
                             <Icons.Trash />
                           </button>
                         </div>
@@ -808,21 +808,21 @@ const App = () => {
             {activeHomeTab === 'marketplace' && (
               <div className="tab-pane fade-in">
                 <div className="marketplace-header">
-                  <h3>Descubra Clássicos</h3>
-                  <p>Inicie agora mesmo sua jornada de tradução sem precisar fazer download de nada.</p>
+                  <h3>Discover Classics</h3>
+                  <p>Start your translation journey right now without downloading anything.</p>
                 </div>
                 
                 <div className="marketplace-grid">
                   {catalogError ? (
                     <div style={{ gridColumn: '1 / -1', color: '#ff4d4f', padding: '1rem', background: '#ffe6e6', borderRadius: '8px' }}>
-                      <strong>Erro ao ler do Supabase:</strong> {catalogError}
+                      <strong>Error reading from Supabase:</strong> {catalogError}
                       <p style={{ marginTop: '10px', fontSize: '0.9em' }}>
-                        Dica: Vá no SQL Editor do Supabase e rode o comando: <br/>
+                        Tip: Go to the Supabase SQL Editor and run the command: <br/>
                         <code>ALTER TABLE catalog DISABLE ROW LEVEL SECURITY;</code>
                       </p>
                     </div>
                   ) : marketplaceBooks.length === 0 ? (
-                    <p style={{ textAlign: 'center', opacity: 0.6, gridColumn: '1 / -1' }}>Carregando catálogo da nuvem ou nenhum livro disponível...</p>
+                    <p style={{ textAlign: 'center', opacity: 0.6, gridColumn: '1 / -1' }}>Loading cloud catalog or no books available...</p>
                   ) : (
                     marketplaceBooks.map(book => (
                       <div key={book.id} className="mk-card">
@@ -834,8 +834,8 @@ const App = () => {
                           )}
                         </div>
                         <div className="mk-info">
-                          <span className={`mk-diff mode-${(book.difficulty || 'iniciante').toLowerCase()}`}>
-                            {book.difficulty || 'Iniciante'}
+                          <span className={`mk-diff mode-${(book.difficulty || 'beginner').toLowerCase()}`}>
+                            {book.difficulty || 'Beginner'}
                           </span>
                           <h4>{book.title}</h4>
                           <p>{book.author}</p>
@@ -843,7 +843,7 @@ const App = () => {
                             className={`btn ${book.free ? 'btn-primary' : 'btn-secondary'} mk-action-btn`}
                             onClick={() => handleDownloadMarketplaceEpub(book)}
                           >
-                            {book.free ? 'Começar a Traduzir' : 'Desbloquear'}
+                            {book.free ? 'Start Translating' : 'Unlock'}
                           </button>
                         </div>
                       </div>
@@ -863,14 +863,14 @@ const App = () => {
               </div>
               <div className="book-info">
                 <h3>{metadata?.title}</h3>
-                <p className="author">por {metadata?.creator || 'Autor Desconhecido'}</p>
+                <p className="author">by {metadata?.creator || 'Unknown Author'}</p>
                 <div className="book-stats">
-                  <span className="stat-chip"><Icons.Hash /> {totalParagraphs} linhas</span>
-                  <span className="stat-chip"><Icons.Book /> {chapters.length} capítulos</span>
+                  <span className="stat-chip"><Icons.Hash /> {totalParagraphs} lines</span>
+                  <span className="stat-chip"><Icons.Book /> {chapters.length} chapters</span>
                 </div>
                 <div className="progress-section">
                   <div className="progress-header">
-                    <span>Progresso da Tradução</span>
+                    <span>Translation Progress</span>
                     <strong>{progress}%</strong>
                   </div>
                   <div className="progress-track">
@@ -943,7 +943,7 @@ const TranslationRow = React.memo(({ paragraph, onTranslationChange }) => {
       <textarea
         ref={textareaRef}
         className={`translation-input ${localVal ? 'has-content' : ''}`}
-        placeholder="Traduza aqui..."
+        placeholder="Translate here..."
         value={localVal}
         onInput={handleInput}
         onChange={handleInput}
