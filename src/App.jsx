@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import JSZip from 'jszip';
+import { supabase } from './supabaseClient';
 
 /* ─────────────────── SVG ICON COMPONENTS ─────────────────── */
 const Icons = {
@@ -538,6 +539,59 @@ const App = () => {
     return () => clearInterval(interval);
   }, [autoSaveInterval, status, handleManualSave]);
 
+  /* ─── Publish to Supabase Public Library ─── */
+  const publishToPublicLibrary = useCallback(async () => {
+    if (!metadata || chapters.length === 0) return;
+    setStatus('Publicando...');
+    
+    try {
+      // 1. Inserir Livro na tabela 'books'
+      const { data: bookData, error: bookErr } = await supabase
+        .from('books')
+        .insert([{
+          title: metadata.title,
+          author: metadata.creator || 'Desconhecido'
+        }])
+        .select()
+        .single();
+        
+      if (bookErr) throw bookErr;
+      const supabaseBookId = bookData.id;
+
+      // 2. Preparar todas as linhas para inserção
+      const translationsToInsert = [];
+      let globalIndex = 0;
+      
+      chapters.forEach(ch => {
+        ch.paragraphs.forEach(p => {
+          translationsToInsert.push({
+            book_id: supabaseBookId,
+            section_index: globalIndex,
+            source_text: p.source,
+            translated_text: p.translation || null,
+            status: p.translation && p.translation.trim() ? 'translated' : 'pending'
+          });
+          globalIndex++;
+        });
+      });
+
+      // 3. Inserir linhas em lotes para não sobrecarregar a requisição
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < translationsToInsert.length; i += BATCH_SIZE) {
+        const batch = translationsToInsert.slice(i, i + BATCH_SIZE);
+        const { error: txtErr } = await supabase.from('translations').insert(batch);
+        if (txtErr) throw txtErr;
+      }
+      
+      setStatus('Salvo');
+      alert('Livro publicado com sucesso na Biblioteca Pública (Supabase)!');
+    } catch (e) {
+      console.error('Falha ao publicar:', e);
+      alert('Erro ao publicar na nuvem: ' + e.message);
+      setStatus('Modificado');
+    }
+  }, [metadata, chapters]);
+
   /* ─── Translation change ─── */
   const handleTranslationChange = useCallback((chapterIdx, paraIdx, value) => {
     setStatus('Modificado');
@@ -634,6 +688,14 @@ const App = () => {
                 title={status === 'Modificado' ? "Salvar alterações" : "Tudo salvo"}
               >
                 <Icons.Save /> {status === 'Modificado' ? 'Salvar' : status}
+              </button>
+              <button 
+                className="btn btn-ghost" 
+                onClick={publishToPublicLibrary} 
+                disabled={status === 'Publicando...'}
+                title="Publicar este livro na biblioteca online"
+              >
+                <Icons.Globe2 /> Publicar na Nuvem
               </button>
               <button className="btn btn-ghost" onClick={() => exportAsEpub(metadata, chapters)} title="Exportar novo EPUB">
                 <Icons.Download /> Exportar EPUB
