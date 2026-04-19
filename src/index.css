@@ -317,6 +317,89 @@ body {
   color: var(--accent-light);
 }
 
+/* ============ LIBRARY SECTION ============ */
+.library-section {
+  margin-top: 60px;
+  width: 100%;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.library-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+}
+
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.lib-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.lib-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--accent-soft);
+}
+
+.lib-card-info {
+  flex: 1;
+  min-width: 0; /* prevents text overflow breaking flexbox */
+}
+
+.lib-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.lib-author {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.lib-delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+  display: flex;
+}
+
+.lib-delete-btn:hover {
+  color: #ef4444; /* red */
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.lib-delete-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* ============ LOADING SCREEN ============ */
 .loading-screen {
   display: flex;

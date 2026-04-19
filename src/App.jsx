@@ -158,8 +158,9 @@ async function parseEpub(arrayBuffer) {
 
 /* ─────────────────── IndexedDB Helpers ─────────────────── */
 const DB_NAME = 'TraduzFacilDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_NAME = 'translations';
+const BOOKS_STORE = 'books';
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -170,9 +171,49 @@ function openDB() {
         const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
         store.createIndex('bookId', 'bookId', { unique: false });
       }
+      if (!db.objectStoreNames.contains(BOOKS_STORE)) {
+        db.createObjectStore(BOOKS_STORE, { keyPath: 'id' });
+      }
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveBookData(bookId, metadata, chapters) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(BOOKS_STORE, 'readwrite');
+    tx.objectStore(BOOKS_STORE).put({ id: bookId, metadata, chapters, lastAccessed: Date.now() });
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function loadAllBooks() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(BOOKS_STORE, 'readonly');
+    const req = tx.objectStore(BOOKS_STORE).getAll();
+    req.onsuccess = () => {
+      resolve(req.result.sort((a, b) => b.lastAccessed - a.lastAccessed));
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deleteBookData(bookId) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+     const tx = db.transaction([BOOKS_STORE, STORE_NAME], 'readwrite');
+     tx.objectStore(BOOKS_STORE).delete(bookId);
+     const idx = tx.objectStore(STORE_NAME).index('bookId');
+     const req = idx.getAllKeys(bookId);
+     req.onsuccess = () => {
+       req.result.forEach(key => tx.objectStore(STORE_NAME).delete(key));
+     };
+     tx.oncomplete = resolve;
+     tx.onerror = () => reject(tx.error);
   });
 }
 
@@ -235,10 +276,16 @@ const App = () => {
   const [bookId, setBookId] = useState(null);
   const [progress, setProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
+  const [library, setLibrary] = useState([]);
   const fileInputRef = useRef(null);
   const saveTimerRef = useRef(null);
 
   const hasBook = chapters.length > 0;
+
+  /* ─── Load library on mount ─── */
+  useEffect(() => {
+    loadAllBooks().then(setLibrary).catch(console.warn);
+  }, []);
 
   /* ─── Compute progress ─── */
   const computeProgress = useCallback((chs) => {
@@ -251,6 +298,47 @@ const App = () => {
     });
     setProgress(total > 0 ? Math.round((done / total) * 100) : 0);
   }, []);
+
+  /* ─── Load state safely ─── */
+  const applyBookState = useCallback(async (id, meta, chs) => {
+    setBookId(id);
+    setMetadata(meta);
+
+    // Load saved translations
+    try {
+      const saved = await loadTranslations(id);
+      const map = new Map(saved.map(s => [s.paragraphId, s.text]));
+      chs.forEach(ch => {
+        ch.paragraphs.forEach(p => {
+          const t = map.get(p.id);
+          if (t) p.translation = t;
+        });
+      });
+    } catch (e) {
+      console.warn('Erro ao carregar traduções salvas:', e);
+    }
+
+    setChapters(chs);
+    computeProgress(chs);
+    
+    // Update Library State
+    await saveBookData(id, meta, chs);
+    const newLib = await loadAllBooks();
+    setLibrary(newLib);
+  }, [computeProgress]);
+
+  /* ─── Handle Open Existing Book ─── */
+  const handleOpenLibraryBook = useCallback(async (book) => {
+    setLoading(true);
+    try {
+      await applyBookState(book.id, book.metadata, book.chapters);
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao carregar o livro salvo.');
+    } finally {
+      setLoading(false);
+    }
+  }, [applyBookState]);
 
   /* ─── Handle file ─── */
   const handleFile = useCallback(async (file) => {
@@ -266,32 +354,14 @@ const App = () => {
       const { metadata: meta, chapters: chs } = await parseEpub(arrayBuffer);
 
       const id = btoa(unescape(encodeURIComponent(meta.title + '||' + meta.creator))).replace(/[^a-zA-Z0-9]/g, '');
-      setBookId(id);
-      setMetadata(meta);
-
-      // Load saved translations
-      try {
-        const saved = await loadTranslations(id);
-        const map = new Map(saved.map(s => [s.paragraphId, s.text]));
-        chs.forEach(ch => {
-          ch.paragraphs.forEach(p => {
-            const t = map.get(p.id);
-            if (t) p.translation = t;
-          });
-        });
-      } catch (e) {
-        console.warn('Erro ao carregar traduções salvas:', e);
-      }
-
-      setChapters(chs);
-      computeProgress(chs);
+      await applyBookState(id, meta, chs);
     } catch (err) {
       console.error('Erro ao processar EPUB:', err);
       alert('Não foi possível carregar este EPUB. Verifique se o arquivo é válido.');
     } finally {
       setLoading(false);
     }
-  }, [computeProgress]);
+  }, [applyBookState]);
 
   /* ─── Translation change ─── */
   const handleTranslationChange = useCallback((chapterIdx, paraIdx, value) => {
@@ -340,11 +410,20 @@ const App = () => {
 
   /* ─── Clear book ─── */
   const clearBook = useCallback(() => {
-    if (window.confirm('Sair deste livro? Seu progresso continua salvo localmente.')) {
-      setChapters([]);
-      setMetadata(null);
-      setBookId(null);
-      setProgress(0);
+    setChapters([]);
+    setMetadata(null);
+    setBookId(null);
+    setProgress(0);
+    // Refresh library when returning to home screen
+    loadAllBooks().then(setLibrary).catch(console.warn);
+  }, []);
+
+  /* ─── Delete book ─── */
+  const handleDeleteBook = useCallback(async (id) => {
+    if (window.confirm('Tem certeza que deseja apagar este livro e todo o progresso de tradução?')) {
+      await deleteBookData(id);
+      const newLib = await loadAllBooks();
+      setLibrary(newLib);
     }
   }, []);
 
@@ -432,6 +511,26 @@ const App = () => {
               <div className="feature-item"><Icons.Shield /> <span>Dados no navegador</span></div>
               <div className="feature-item"><Icons.Save /> <span>Auto-save em tempo real</span></div>
             </div>
+
+            {/* Library Section */}
+            {library.length > 0 && (
+              <div className="library-section">
+                <h3 className="library-title">Sua Biblioteca</h3>
+                <div className="library-grid">
+                  {library.map(book => (
+                    <div key={book.id} className="lib-card">
+                      <div className="lib-card-info" onClick={() => handleOpenLibraryBook(book)}>
+                        <h4 className="lib-title">{book.metadata.title}</h4>
+                        <p className="lib-author">{book.metadata.creator}</p>
+                      </div>
+                      <button className="lib-delete-btn" onClick={() => handleDeleteBook(book.id)} title="Excluir livro">
+                        <Icons.Trash />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         ) : (
           /* ─── Editor ─── */
