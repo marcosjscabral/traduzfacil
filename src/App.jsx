@@ -460,6 +460,8 @@ const App = () => {
   const [dragActive, setDragActive] = useState(false);
   const [library, setLibrary] = useState([]);
   const [activeHomeTab, setActiveHomeTab] = useState('library');
+  const [myFlashcards, setMyFlashcards] = useState([]);
+  const [editingCard, setEditingCard] = useState(null);
   const [autoSaveInterval, setAutoSaveInterval] = useState(1);
   const [marketplaceBooks, setMarketplaceBooks] = useState([]);
   const [catalogError, setCatalogError] = useState(null);
@@ -572,7 +574,7 @@ const App = () => {
     loadAllBooks().then(setLibrary).catch(console.warn);
   }, []);
 
-  /* ─── Fetch Supabase Catalog ─── */
+  /* ─── Fetch Supabase Catalog & Flashcards ─── */
   useEffect(() => {
     if (activeHomeTab === 'marketplace') {
       const fetchCatalog = async () => {
@@ -587,8 +589,21 @@ const App = () => {
         }
       };
       fetchCatalog();
+    } else if (activeHomeTab === 'flashcards' && user) {
+      const fetchCards = async () => {
+        setLoading(true);
+        try {
+          const { data, error } = await supabase.from('flashcards').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+          if (!error) setMyFlashcards(data || []);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchCards();
     }
-  }, [activeHomeTab]);
+  }, [activeHomeTab, user]);
 
   /* ═══════════════════ AUTH HANDLERS ═══════════════════ */
 
@@ -1453,6 +1468,14 @@ const App = () => {
               >
                 <Icons.Globe2 /> Public Library (Explore)
               </button>
+              {user && (
+                <button 
+                  className={`home-tab ${activeHomeTab === 'flashcards' ? 'active' : ''}`}
+                  onClick={() => setActiveHomeTab('flashcards')}
+                >
+                  <Icons.Star /> My Flashcards
+                </button>
+              )}
             </div>
 
             {/* ─── Tab Content: LIBRARY & UPLOAD ─── */}
@@ -1542,6 +1565,84 @@ const App = () => {
                             {book.free ? 'Start Translating' : 'Unlock'}
                           </button>
                         </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ─── Tab Content: FLASHCARDS ─── */}
+            {activeHomeTab === 'flashcards' && user && (
+              <div className="tab-pane fade-in">
+                <div className="marketplace-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3>My Flashcards</h3>
+                    <p>Review and edit the flashcards you created while reading.</p>
+                  </div>
+                  {myFlashcards.length > 0 && (
+                    <button className="btn btn-secondary" onClick={handleDownloadCSV} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Icons.Download /> .csv to Anki
+                    </button>
+                  )}
+                </div>
+
+                <div className="flashcards-grid">
+                  {myFlashcards.length === 0 ? (
+                    <p style={{ gridColumn: '1 / -1', opacity: 0.5, textAlign: 'center', padding: '2rem' }}>You haven't created any flashcards yet. Select text while translating a book to add one.</p>
+                  ) : (
+                    myFlashcards.map(card => (
+                      <div key={card.id} className="fc-card glass">
+                        {editingCard?.id === card.id ? (
+                          <div className="fc-editor">
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Source</label>
+                            <input 
+                              className="translation-input"
+                              value={editingCard.source_text} 
+                              onChange={e => setEditingCard({...editingCard, source_text: e.target.value})} 
+                              style={{ marginBottom: '0.5rem', background: 'rgba(0,0,0,0.1)' }}
+                            />
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Translation</label>
+                            <input 
+                              className="translation-input"
+                              value={editingCard.translated_text} 
+                              onChange={e => setEditingCard({...editingCard, translated_text: e.target.value})} 
+                              style={{ marginBottom: '1rem' }}
+                            />
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => setEditingCard(null)}>Cancel</button>
+                              <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={async () => {
+                                try {
+                                  if (!editingCard.source_text.trim() || !editingCard.translated_text.trim()) return;
+                                  const {error} = await supabase.from('flashcards').update({ source_text: editingCard.source_text, translated_text: editingCard.translated_text }).eq('id', editingCard.id);
+                                  if (error) throw error;
+                                  setMyFlashcards(prev => prev.map(c => c.id === editingCard.id ? { ...c, source_text: editingCard.source_text, translated_text: editingCard.translated_text } : c));
+                                  setEditingCard(null);
+                                } catch (e) {
+                                  alert(e.message);
+                                }
+                              }}><Icons.Check /> Save</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="fc-content">
+                              <div className="fc-source">{card.source_text}</div>
+                              <div className="fc-divider"></div>
+                              <div className="fc-translation">{card.translated_text}</div>
+                            </div>
+                            <div className="fc-actions">
+                              <button className="btn btn-ghost btn-sm" onClick={() => setEditingCard(card)} title="Edit"><Icons.Edit /></button>
+                              <button className="btn btn-ghost btn-sm" style={{ color: '#ef4444' }} onClick={async () => {
+                                if (!window.confirm("Delete this flashcard?")) return;
+                                try {
+                                  await supabase.from('flashcards').delete().eq('id', card.id);
+                                  setMyFlashcards(prev => prev.filter(c => c.id !== card.id));
+                                } catch(e) {}
+                              }} title="Delete"><Icons.Trash /></button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     ))
                   )}
