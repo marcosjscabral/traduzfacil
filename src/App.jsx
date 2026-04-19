@@ -474,7 +474,7 @@ const App = () => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '' });
+  const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '', success: false });
 
   /* ─── Admin State ─── */
   const [adminCatalog, setAdminCatalog] = useState([]);
@@ -885,7 +885,7 @@ const App = () => {
     if (document.activeElement?.tagName === 'TEXTAREA' || document.activeElement?.tagName === 'INPUT') return;
     const text = selection.toString().trim();
     if (text.length > 0) {
-      setFlashcardModal({ show: true, source: text, translation: '' });
+      setFlashcardModal({ show: true, source: text, translation: '', success: false });
     }
   }, []);
 
@@ -910,9 +910,11 @@ const App = () => {
          if (error.code === '42P01') throw new Error("The 'flashcards' table doesn't exist yet on Supabase. Please create it!");
          throw error;
       }
-      setFlashcardModal({ show: false, source: '', translation: '' });
-      window.getSelection()?.removeAllRanges();
-      alert('Flashcard saved successfully!');
+      setFlashcardModal(p => ({ ...p, success: true }));
+      setTimeout(() => {
+        setFlashcardModal({ show: false, source: '', translation: '', success: false });
+        window.getSelection()?.removeAllRanges();
+      }, 1500);
     } catch (err) {
       alert('Error saving flashcard: ' + err.message);
     } finally {
@@ -1086,39 +1088,50 @@ const App = () => {
       )}
       {/* ═══ Flashcard Modal ═══ */}
       {flashcardModal.show && (
-        <div className="modal-overlay" onClick={() => setFlashcardModal({ show: false, source: '', translation: '' })}>
+        <div className="modal-overlay" onClick={() => setFlashcardModal({ show: false, source: '', translation: '', success: false })}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setFlashcardModal({ show: false, source: '', translation: '' })}><Icons.X /></button>
+            <button className="modal-close" onClick={() => setFlashcardModal({ show: false, source: '', translation: '', success: false })}><Icons.X /></button>
             <div className="auth-modal-body" style={{ textAlign: 'left', alignItems: 'flex-start' }}>
               <h3 style={{ marginBottom: '1rem' }}>Create Flashcard</h3>
-              <div style={{ width: '100%', marginBottom: '1rem' }}>
-                <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Source text</label>
-                <textarea 
-                  value={flashcardModal.source}
-                  readOnly
-                  className="translation-input"
-                  style={{ minHeight: '60px', marginTop: '0.5rem', background: 'rgba(255,255,255,0.05)', cursor: 'default' }}
-                />
-              </div>
-              <div style={{ width: '100%', marginBottom: '1.5rem' }}>
-                <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Translation</label>
-                <textarea 
-                  value={flashcardModal.translation}
-                  onChange={(e) => setFlashcardModal(p => ({ ...p, translation: e.target.value }))}
-                  placeholder="Enter translation for the selected text..."
-                  className="translation-input"
-                  style={{ minHeight: '60px', marginTop: '0.5rem' }}
-                  autoFocus
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
-                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setFlashcardModal({ show: false, source: '', translation: '' })}>
-                  Cancel
-                </button>
-                <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSaveFlashcard}>
-                  <Icons.Save /> Save
-                </button>
-              </div>
+              {flashcardModal.success ? (
+                <div style={{ padding: '2rem 1rem', textAlign: 'center', width: '100%', color: '#10b981', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ marginBottom: '1rem', background: 'rgba(16, 185, 129, 0.1)', padding: '1rem', borderRadius: '50%', color: '#10b981' }}>
+                    <Icons.Check />
+                  </div>
+                  <h4 style={{ margin: 0, fontSize: '1.2rem' }}>Flashcard saved successfully!</h4>
+                </div>
+              ) : (
+                <>
+                  <div style={{ width: '100%', marginBottom: '1rem' }}>
+                    <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Source text</label>
+                    <textarea 
+                      value={flashcardModal.source}
+                      readOnly
+                      className="translation-input"
+                      style={{ minHeight: '60px', marginTop: '0.5rem', background: 'rgba(255,255,255,0.05)', cursor: 'default' }}
+                    />
+                  </div>
+                  <div style={{ width: '100%', marginBottom: '1.5rem' }}>
+                    <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Translation</label>
+                    <textarea 
+                      value={flashcardModal.translation}
+                      onChange={(e) => setFlashcardModal(p => ({ ...p, translation: e.target.value }))}
+                      placeholder="Enter translation for the selected text..."
+                      className="translation-input"
+                      style={{ minHeight: '60px', marginTop: '0.5rem' }}
+                      autoFocus
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '1rem', width: '100%', justifyContent: 'center' }}>
+                    <button className="btn btn-secondary" style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setFlashcardModal({ show: false, source: '', translation: '', success: false })}>
+                      Cancel
+                    </button>
+                    <button className="btn btn-primary" style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }} onClick={handleSaveFlashcard}>
+                      <Icons.Save /> Save
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
