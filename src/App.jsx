@@ -36,7 +36,7 @@ const Icons = {
 };
 
 /* ─────────────────── TEXT CHUNKER ─────────────────── */
-function splitIntoLines(text, maxChars = 95) {
+function splitIntoLines(text, maxChars = 65) {
   const words = text.split(/\s+/);
   const lines = [];
   let currentLine = '';
