@@ -474,6 +474,7 @@ const App = () => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '' });
 
   /* ─── Admin State ─── */
   const [adminCatalog, setAdminCatalog] = useState([]);
@@ -877,6 +878,83 @@ const App = () => {
       setLibrary(newLib);
     }
   }, []);
+  /* ═══════════════════ FLASHCARDS HANDLERS ═══════════════════ */
+  const handleEditorMouseUp = useCallback(() => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+    if (document.activeElement?.tagName === 'TEXTAREA' || document.activeElement?.tagName === 'INPUT') return;
+    const text = selection.toString().trim();
+    if (text.length > 0) {
+      setFlashcardModal({ show: true, source: text, translation: '' });
+    }
+  }, []);
+
+  const handleSaveFlashcard = async () => {
+    if (!user) {
+      alert('Sign in to save flashcards.');
+      setShowAuthModal(true);
+      return;
+    }
+    if (!flashcardModal.translation.trim()) {
+      alert('Please enter a translation.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('flashcards').insert([{
+        user_id: user.id,
+        source_text: flashcardModal.source,
+        translated_text: flashcardModal.translation
+      }]);
+      if (error) {
+         if (error.code === '42P01') throw new Error("The 'flashcards' table doesn't exist yet on Supabase. Please create it!");
+         throw error;
+      }
+      setFlashcardModal({ show: false, source: '', translation: '' });
+      window.getSelection()?.removeAllRanges();
+      alert('Flashcard saved successfully!');
+    } catch (err) {
+      alert('Error saving flashcard: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadCSV = async () => {
+    if (!user) {
+      alert('Sign in to download your flashcards.');
+      setShowAuthModal(true);
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.from('flashcards').select('source_text, translated_text').eq('user_id', user.id);
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        alert('No flashcards found.');
+        return;
+      }
+      let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // Adding BOM for proper UTF-8 handling in Excel/Anki
+      data.forEach(row => {
+        const src = `"${row.source_text.replace(/"/g, '""')}"`;
+        const tr = `"${row.translated_text.replace(/"/g, '""')}"`;
+        csvContent += `${src},${tr}\n`;
+      });
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'flashcards_anki.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Error downloading CSV: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /* ═══════════════════ ADMIN HANDLERS ═══════════════════ */
 
@@ -1006,6 +1084,45 @@ const App = () => {
           </div>
         </div>
       )}
+      {/* ═══ Flashcard Modal ═══ */}
+      {flashcardModal.show && (
+        <div className="modal-overlay" onClick={() => setFlashcardModal({ show: false, source: '', translation: '' })}>
+          <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setFlashcardModal({ show: false, source: '', translation: '' })}><Icons.X /></button>
+            <div className="auth-modal-body" style={{ textAlign: 'left', alignItems: 'flex-start' }}>
+              <h3 style={{ marginBottom: '1rem' }}>Create Flashcard</h3>
+              <div style={{ width: '100%', marginBottom: '1rem' }}>
+                <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Source text</label>
+                <textarea 
+                  value={flashcardModal.source}
+                  readOnly
+                  className="translation-input"
+                  style={{ minHeight: '60px', marginTop: '0.5rem', background: 'rgba(255,255,255,0.05)', cursor: 'default' }}
+                />
+              </div>
+              <div style={{ width: '100%', marginBottom: '1.5rem' }}>
+                <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Translation</label>
+                <textarea 
+                  value={flashcardModal.translation}
+                  onChange={(e) => setFlashcardModal(p => ({ ...p, translation: e.target.value }))}
+                  placeholder="Enter translation for the selected text..."
+                  className="translation-input"
+                  style={{ minHeight: '60px', marginTop: '0.5rem' }}
+                  autoFocus
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
+                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setFlashcardModal({ show: false, source: '', translation: '' })}>
+                  Cancel
+                </button>
+                <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSaveFlashcard}>
+                  <Icons.Save /> Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══ Header ═══ */}
       <header className="app-header">
@@ -1048,6 +1165,9 @@ const App = () => {
                 title="Save your translation progress to the cloud"
               >
                 <Icons.Cloud /> Save to Cloud
+              </button>
+              <button className="btn btn-ghost" onClick={handleDownloadCSV} title="Download flashcards for Anki">
+                <Icons.Download /> .csv to Anki
               </button>
               <button className="btn btn-ghost" onClick={() => exportAsEpub(metadata, chapters)} title="Export new EPUB">
                 <Icons.Download /> Export EPUB
@@ -1427,7 +1547,7 @@ const App = () => {
 
         {/* ─── VIEW: EDITOR ─── */}
         {currentView === 'editor' && hasBook && (
-          <section className="editor-section">
+          <section className="editor-section" onMouseUp={handleEditorMouseUp}>
             {/* Book Card */}
             <div className="book-card glass">
               <div className="book-cover-placeholder">
