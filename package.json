@@ -1,7 +1,7 @@
 {
   "name": "traduz-facil-pro",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,11 +11,7 @@
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "epubjs": "^0.3.93",
-    "jszip": "^3.10.1",
-    "dexie": "^3.2.4",
-    "lucide-react": "^0.263.1",
-    "framer-motion": "^10.12.16"
+    "jszip": "^3.10.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",

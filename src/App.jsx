@@ -1,263 +1,499 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, BookOpen, Save, CheckCircle, Loader2, Globe, Trash2 } from 'lucide-react';
-import ePub from 'epubjs';
-import Dexie from 'dexie';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import JSZip from 'jszip';
 
-// --- Database Setup ---
-const db = new Dexie('TraduzFacilPro');
-db.version(1).stores({
-  translations: 'id, bookId, text, timestamp'
-});
+/* ─────────────────── SVG ICON COMPONENTS ─────────────────── */
+const Icons = {
+  Globe: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+  ),
+  Upload: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+  ),
+  Book: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+  ),
+  Save: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1-2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+  ),
+  Trash: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+  ),
+  Check: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+  ),
+  Hash: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+  ),
+  Shield: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+  ),
+  Zap: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+  ),
+  Download: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+  ),
+};
 
+/* ─────────────────── EPUB PARSER (via JSZip) ─────────────────── */
+async function parseEpub(arrayBuffer) {
+  const zip = await JSZip.loadAsync(arrayBuffer);
+
+  // 1. Find the container.xml to locate the .opf file
+  const containerXml = await zip.file('META-INF/container.xml')?.async('text');
+  if (!containerXml) throw new Error('EPUB inválido: container.xml não encontrado');
+
+  const parser = new DOMParser();
+  const containerDoc = parser.parseFromString(containerXml, 'application/xml');
+  const rootfilePath = containerDoc.querySelector('rootfile')?.getAttribute('full-path');
+  if (!rootfilePath) throw new Error('EPUB inválido: rootfile não encontrado');
+
+  // Base directory for resolving relative paths
+  const opfDir = rootfilePath.includes('/') ? rootfilePath.substring(0, rootfilePath.lastIndexOf('/') + 1) : '';
+
+  // 2. Parse the OPF to find metadata and spine order
+  const opfText = await zip.file(rootfilePath)?.async('text');
+  if (!opfText) throw new Error('EPUB inválido: OPF não encontrado');
+  const opfDoc = parser.parseFromString(opfText, 'application/xml');
+
+  // Metadata
+  const titleEl = opfDoc.querySelector('metadata title, metadata dc\\:title');
+  const creatorEl = opfDoc.querySelector('metadata creator, metadata dc\\:creator');
+  const metadata = {
+    title: titleEl?.textContent || 'Título Desconhecido',
+    creator: creatorEl?.textContent || 'Autor Desconhecido',
+  };
+
+  // Build manifest map: id -> href
+  const manifest = {};
+  opfDoc.querySelectorAll('manifest item').forEach(item => {
+    manifest[item.getAttribute('id')] = item.getAttribute('href');
+  });
+
+  // Spine order
+  const spineItems = Array.from(opfDoc.querySelectorAll('spine itemref')).map(ref => ref.getAttribute('idref'));
+
+  // 3. Extract text paragraphs from each spine document
+  const allParagraphs = [];
+  let chapterIndex = 0;
+
+  for (const idref of spineItems) {
+    const href = manifest[idref];
+    if (!href) continue;
+
+    const fullPath = opfDir + href;
+    const fileEntry = zip.file(fullPath);
+    if (!fileEntry) continue;
+
+    const htmlText = await fileEntry.async('text');
+    const doc = parser.parseFromString(htmlText, 'application/xhtml+xml');
+    const body = doc.querySelector('body');
+    if (!body) continue;
+
+    // Get all content nodes
+    const nodes = body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote');
+    const chapterParagraphs = [];
+    const seenTexts = new Set();
+
+    nodes.forEach((node, idx) => {
+      const text = (node.textContent || '').trim();
+      if (text.length > 3 && !seenTexts.has(text)) {
+        seenTexts.add(text);
+        const tag = node.tagName.toLowerCase();
+        chapterParagraphs.push({
+          id: `ch${chapterIndex}_p${idx}`,
+          source: text,
+          translation: '',
+          isHeading: tag.startsWith('h'),
+        });
+      }
+    });
+
+    if (chapterParagraphs.length > 0) {
+      allParagraphs.push({
+        chapterIndex,
+        chapterLabel: `Capítulo ${chapterIndex + 1}`,
+        paragraphs: chapterParagraphs,
+      });
+      chapterIndex++;
+    }
+  }
+
+  return { metadata, chapters: allParagraphs };
+}
+
+/* ─────────────────── IndexedDB Helpers ─────────────────── */
+const DB_NAME = 'TraduzFacilDB';
+const DB_VERSION = 2;
+const STORE_NAME = 'translations';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        store.createIndex('bookId', 'bookId', { unique: false });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveTranslation(bookId, paragraphId, text) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put({ id: `${bookId}__${paragraphId}`, bookId, paragraphId, text, ts: Date.now() });
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function loadTranslations(bookId) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const idx = tx.objectStore(STORE_NAME).index('bookId');
+    const req = idx.getAll(bookId);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/* ─────────────────── EXPORT TRANSLATIONS ─────────────────── */
+function exportTranslations(metadata, chapters) {
+  let output = `# ${metadata.title}\n## ${metadata.creator}\n\n---\n\n`;
+  chapters.forEach(ch => {
+    output += `### ${ch.chapterLabel}\n\n`;
+    ch.paragraphs.forEach(p => {
+      output += `> ${p.source}\n`;
+      output += `${p.translation || '(sem tradução)'}\n\n`;
+    });
+    output += `---\n\n`;
+  });
+
+  const blob = new Blob([output], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${metadata.title.replace(/[^a-zA-Z0-9]/g, '_')}_traducao.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ─────────────────── AUTO-RESIZE TEXTAREA ─────────────────── */
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN APP COMPONENT
+   ═══════════════════════════════════════════════════════════════ */
 const App = () => {
-  const [book, setBook] = useState(null);
+  const [chapters, setChapters] = useState([]);
   const [metadata, setMetadata] = useState(null);
-  const [paragraphs, setParagraphs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('Sincronizado');
   const [bookId, setBookId] = useState(null);
   const [progress, setProgress] = useState(0);
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef(null);
+  const saveTimerRef = useRef(null);
 
-  // --- Handlers ---
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const hasBook = chapters.length > 0;
+
+  /* ─── Compute progress ─── */
+  const computeProgress = useCallback((chs) => {
+    let total = 0, done = 0;
+    chs.forEach(ch => {
+      ch.paragraphs.forEach(p => {
+        total++;
+        if (p.translation && p.translation.trim().length > 0) done++;
+      });
+    });
+    setProgress(total > 0 ? Math.round((done / total) * 100) : 0);
+  }, []);
+
+  /* ─── Handle file ─── */
+  const handleFile = useCallback(async (file) => {
+    if (!file || !file.name.toLowerCase().endsWith('.epub')) {
+      alert('Por favor, selecione um arquivo .epub válido.');
+      return;
+    }
 
     setLoading(true);
-    const reader = new FileReader();
 
-    reader.onload = async (event) => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const { metadata: meta, chapters: chs } = await parseEpub(arrayBuffer);
+
+      const id = btoa(unescape(encodeURIComponent(meta.title + '||' + meta.creator))).replace(/[^a-zA-Z0-9]/g, '');
+      setBookId(id);
+      setMetadata(meta);
+
+      // Load saved translations
       try {
-        const arrayBuffer = event.target.result;
-        const newBook = ePub(arrayBuffer);
-        const meta = await newBook.loaded.metadata;
-        const id = btoa(meta.title + meta.creator);
-
-        setBook(newBook);
-        setMetadata(meta);
-        setBookId(id);
-
-        await extractContent(newBook, id);
-      } catch (err) {
-        console.error("Erro ao carregar EPUB:", err);
-        alert("Não foi possível carregar este EPUB. Verifique se o arquivo não está corrompido.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    reader.readAsArrayBuffer(file);
-  };
-
-  const extractContent = async (epub, id) => {
-    const spine = await epub.loaded.spine;
-    const allParagraphs = [];
-    
-    // Carregar todas as traduções existentes de uma vez para performance
-    const savedStates = await db.translations.where('bookId').equals(id).toArray();
-    const translationMap = new Map(savedStates.map(s => [s.id, s.text]));
-
-    // Spine traverse
-    for (const section of spine.items) {
-      try {
-        const resources = await section.load(epub.load.bind(epub));
-        const body = resources.querySelector('body');
-        
-        // Estratégia de extração ultra-robusta
-        // Pegamos todos os elementos que possuem texto direto e não são apenas containers vazios
-        const nodes = Array.from(body.querySelectorAll('p, h1, h2, h3, li, blockquote, div'));
-        
-        nodes.forEach((node, idx) => {
-          // Apenas elementos que possuem texto e cujo texto não é idêntico ao de um filho (para não duplicar divs que contêm p)
-          const text = node.innerText?.trim();
-          const hasDirectText = Array.from(node.childNodes).some(n => n.nodeType === 3 && n.textContent.trim().length > 0);
-          
-          if (text && text.length > 5 && (hasDirectText || node.tagName === 'P')) {
-            const lineId = `${id}_${section.index}_${idx}`;
-            // Evitar duplicatas exatas de texto na mesma seção (comum em EPUBs mal estruturados)
-            if (!allParagraphs.some(p => p.source === text && p.id.startsWith(`${id}_${section.index}`))) {
-              allParagraphs.push({
-                id: lineId,
-                source: text,
-                translation: translationMap.get(lineId) || ''
-              });
-            }
-          }
+        const saved = await loadTranslations(id);
+        const map = new Map(saved.map(s => [s.paragraphId, s.text]));
+        chs.forEach(ch => {
+          ch.paragraphs.forEach(p => {
+            const t = map.get(p.id);
+            if (t) p.translation = t;
+          });
         });
-        
-        section.unload();
       } catch (e) {
-        console.warn(`Seção ${section.href} falhou ao carregar:`, e);
+        console.warn('Erro ao carregar traduções salvas:', e);
       }
+
+      setChapters(chs);
+      computeProgress(chs);
+    } catch (err) {
+      console.error('Erro ao processar EPUB:', err);
+      alert('Não foi possível carregar este EPUB. Verifique se o arquivo é válido.');
+    } finally {
+      setLoading(false);
     }
+  }, [computeProgress]);
 
-    setParagraphs(allParagraphs);
-    updateProgress(allParagraphs);
-  };
-
-  const handleTranslationChange = async (id, value) => {
+  /* ─── Translation change ─── */
+  const handleTranslationChange = useCallback((chapterIdx, paraIdx, value) => {
     setStatus('Salvando...');
-    
-    // Update local state for immediate feedback
-    setParagraphs(prev => {
-      const fresh = prev.map(p => p.id === id ? { ...p, translation: value } : p);
-      updateProgress(fresh);
-      return fresh;
+
+    setChapters(prev => {
+      const next = prev.map((ch, ci) => {
+        if (ci !== chapterIdx) return ch;
+        return {
+          ...ch,
+          paragraphs: ch.paragraphs.map((p, pi) => {
+            if (pi !== paraIdx) return p;
+            return { ...p, translation: value };
+          }),
+        };
+      });
+      computeProgress(next);
+      return next;
     });
 
-    // Persist to DB
-    await db.translations.put({
-      id,
-      bookId,
-      text: value,
-      timestamp: Date.now()
-    });
+    // Debounced save to IndexedDB
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      try {
+        const ch = chapters[chapterIdx] || {};
+        const p = (ch.paragraphs || [])[paraIdx];
+        if (p && bookId) {
+          await saveTranslation(bookId, p.id, value);
+        }
+      } catch (e) {
+        console.warn('Falha ao salvar:', e);
+      }
+      setStatus('Sincronizado');
+    }, 600);
+  }, [bookId, chapters, computeProgress]);
 
-    // Debounced status update
-    setTimeout(() => setStatus('Sincronizado'), 800);
-  };
+  /* ─── Drag & Drop ─── */
+  const onDragOver = useCallback((e) => { e.preventDefault(); setDragActive(true); }, []);
+  const onDragLeave = useCallback(() => setDragActive(false), []);
+  const onDrop = useCallback((e) => {
+    e.preventDefault();
+    setDragActive(false);
+    const file = e.dataTransfer.files[0];
+    handleFile(file);
+  }, [handleFile]);
 
-  const updateProgress = (list) => {
-    const total = list.length;
-    const translated = list.filter(p => p.translation.trim().length > 0).length;
-    setProgress(total > 0 ? (translated / total) * 100 : 0);
-  };
-
-  const clearCurrentBook = () => {
-    if (confirm("Deseja sair deste livro? O progresso salvo continuará no seu dispositivo.")) {
-      setBook(null);
+  /* ─── Clear book ─── */
+  const clearBook = useCallback(() => {
+    if (window.confirm('Sair deste livro? Seu progresso continua salvo localmente.')) {
+      setChapters([]);
       setMetadata(null);
-      setParagraphs([]);
       setBookId(null);
+      setProgress(0);
     }
-  };
+  }, []);
 
-  // --- Render Sections ---
+  /* ─── Count total paragraphs ─── */
+  const totalParagraphs = chapters.reduce((sum, ch) => sum + ch.paragraphs.length, 0);
+
+  /* ═══════════════════ RENDER ═══════════════════ */
+
+  // Loading
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <Loader2 className="w-12 h-12 text-accent animate-spin" />
-        <p className="font-medium text-text-secondary animate-pulse">Descompactando páginas...</p>
+      <div className="app-container">
+        <div className="loading-screen">
+          <div className="spinner-ring" />
+          <p>Extraindo páginas do livro...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-deep text-primary font-inter">
-      {/* Header */}
-      <header className="sticky top-0 z-50 h-20 px-8 flex items-center justify-between glass-morphism border-b">
-        <div className="flex items-center gap-3">
-          <Globe className="text-accent w-8 h-8" />
-          <h1 className="text-2xl font-bold gradient-text font-outfit">TraduzFacil<span className="text-text-primary ml-1">Pro</span></h1>
-        </div>
+    <div className="app-container">
 
-        <div className="flex items-center gap-4">
-          {book && (
-            <button onClick={clearCurrentBook} className="btn btn-secondary text-sm">
-              <Trash2 className="w-4 h-4" /> Sair
-            </button>
+      {/* ─── Header ─── */}
+      <header className="app-header">
+        <div className="header-brand">
+          <Icons.Globe />
+          <h1 className="gradient-text">TraduzFácil<span>Pro</span></h1>
+        </div>
+        <div className="header-actions">
+          {hasBook && (
+            <>
+              <button className="btn btn-ghost" onClick={() => exportTranslations(metadata, chapters)} title="Exportar tradução">
+                <Icons.Download /> Exportar
+              </button>
+              <button className="btn btn-secondary" onClick={clearBook}>
+                <Icons.Trash /> Sair
+              </button>
+            </>
           )}
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 border border-white/5 text-sm">
-            <span className={`w-2 h-2 rounded-full ${status === 'Sincronizado' ? 'bg-success' : 'bg-yellow-500 animate-pulse'}`}></span>
+          <div className="status-pill">
+            <span className={`status-dot ${status === 'Sincronizado' ? 'synced' : 'saving'}`} />
             {status}
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto p-8">
-        <AnimatePresence mode="wait">
-          {!book ? (
-            <motion.div 
-              key="welcome"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="mt-20 text-center"
-            >
-              <h2 className="text-5xl font-bold font-outfit mb-6">Transforme sua leitura em <span className="gradient-text">trabalho criativo.</span></h2>
-              <p className="text-xl text-text-secondary mb-12 max-w-2xl mx-auto">
-                Carregue seu arquivo EPUB e comece a traduzir instantaneamente. 
-                Todo o seu progresso é salvo offline no seu navegador.
-              </p>
+      {/* ─── Main ─── */}
+      <main className="app-main">
+        {!hasBook ? (
+          /* ─── Welcome Screen ─── */
+          <section className="welcome-section">
+            <h2>
+              Transforme sua leitura em{' '}
+              <span className="gradient-text">trabalho criativo.</span>
+            </h2>
+            <p>
+              Carregue seu arquivo EPUB e comece a traduzir instantaneamente.
+              Todo o seu progresso é salvo offline no seu navegador.
+            </p>
 
-              <div 
-                className="group relative max-w-xl mx-auto h-64 border-2 border-dashed border-border rounded-3xl flex flex-col items-center justify-center gap-4 hover:border-accent transition-all cursor-pointer bg-bg-card/50"
-                onClick={() => document.getElementById('file-upload').click()}
-              >
-                <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center text-accent group-hover:scale-110 transition-transform">
-                  <Upload className="w-8 h-8" />
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-semibold">Arraste seu EPUB ou clique aqui</p>
-                  <p className="text-sm text-text-dim">Aceitamos apenas arquivos .epub</p>
-                </div>
-                <input id="file-upload" type="file" accept=".epub" hidden onChange={handleFileUpload} />
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div 
-              key="editor"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="space-y-12"
+            <div
+              className={`drop-zone ${dragActive ? 'dragover' : ''}`}
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
             >
-              {/* Profile Card */}
-              <div className="flex items-start gap-8 p-8 rounded-3xl glass-morphism">
-                <div className="w-32 h-44 bg-bg-dark rounded-xl flex items-center justify-center border border-border shadow-2xl">
-                  <BookOpen className="w-12 h-12 text-text-dim" />
+              <div className="drop-icon">
+                <Icons.Upload />
+              </div>
+              <span className="drop-text-main">Arraste seu EPUB ou clique aqui</span>
+              <span className="drop-text-sub">Aceitamos apenas arquivos .epub</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".epub"
+                hidden
+                onChange={(e) => handleFile(e.target.files[0])}
+              />
+            </div>
+
+            <div className="features-strip">
+              <div className="feature-item"><Icons.Zap /> <span>Parsing offline</span></div>
+              <div className="feature-item"><Icons.Shield /> <span>Dados no navegador</span></div>
+              <div className="feature-item"><Icons.Save /> <span>Auto-save em tempo real</span></div>
+            </div>
+          </section>
+        ) : (
+          /* ─── Editor ─── */
+          <section className="editor-section">
+            {/* Book Card */}
+            <div className="book-card glass">
+              <div className="book-cover-placeholder">
+                <Icons.Book />
+              </div>
+              <div className="book-info">
+                <h3>{metadata?.title}</h3>
+                <p className="author">por {metadata?.creator || 'Autor Desconhecido'}</p>
+                <div className="book-stats">
+                  <span className="stat-chip"><Icons.Hash /> {totalParagraphs} linhas</span>
+                  <span className="stat-chip"><Icons.Book /> {chapters.length} capítulos</span>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-3xl font-bold font-outfit mb-2">{metadata?.title}</h3>
-                  <p className="text-accent font-medium mb-6">Por {metadata?.creator || 'Autor Desconhecido'}</p>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm font-medium">
-                      <span>Progresso da Tradução</span>
-                      <span>{Math.round(progress)}%</span>
-                    </div>
-                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progress}%` }}
-                        className="h-full bg-accent shadow-[0_0_15px_var(--accent-glow)]"
-                      />
-                    </div>
+                <div className="progress-section">
+                  <div className="progress-header">
+                    <span>Progresso da Tradução</span>
+                    <strong>{progress}%</strong>
+                  </div>
+                  <div className="progress-track">
+                    <div className="progress-fill" style={{ width: `${progress}%` }} />
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Translation List */}
-              <div className="space-y-8 pb-32">
-                {paragraphs.map((p) => (
-                  <div key={p.id} className="group flex flex-col gap-4 p-6 rounded-2xl hover:bg-white/[0.02] transition-colors border border-transparent hover:border-white/5">
-                    <div className="flex gap-3">
-                      <div className="w-1 h-auto bg-accent rounded-full opacity-30 group-hover:opacity-100 transition-opacity"></div>
-                      <p className="text-lg leading-relaxed text-text-primary/90">{p.source}</p>
-                    </div>
-                    <textarea 
-                      value={p.translation}
-                      onChange={(e) => handleTranslationChange(p.id, e.target.value)}
-                      placeholder="Traduza aqui..."
-                      className="w-full min-h-[60px] p-4 rounded-xl bg-black/40 border border-border focus:border-accent focus:ring-1 focus:ring-accent outline-none text-lg text-white placeholder:text-text-dim/50 resize-y transition-all"
+            {/* Translation List */}
+            <div className="translation-list">
+              {chapters.map((ch, ci) => (
+                <React.Fragment key={ci}>
+                  <div className="chapter-divider">
+                    <span className="chapter-label">{ch.chapterLabel}</span>
+                  </div>
+                  {ch.paragraphs.map((p, pi) => (
+                    <TranslationRow
+                      key={p.id}
+                      paragraph={p}
+                      onTranslationChange={(val) => handleTranslationChange(ci, pi, val)}
                     />
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  ))}
+                </React.Fragment>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
 
-      {/* Footer Shortcut */}
-      {book && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 px-6 py-3 rounded-full glass-morphism border shadow-2xl">
-          <Save className="w-4 h-4 text-accent" />
-          <span className="text-sm font-medium">Backup local ativo em tempo real</span>
+      {/* ─── Floating Bar ─── */}
+      {hasBook && (
+        <div className="floating-bar glass">
+          <Icons.Save />
+          <span>Backup local ativo em tempo real</span>
         </div>
       )}
     </div>
   );
 };
+
+/* ─────────────────── TRANSLATION ROW (memoized) ─────────────────── */
+const TranslationRow = React.memo(({ paragraph, onTranslationChange }) => {
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    if (textareaRef.current && paragraph.translation) {
+      autoResize(textareaRef.current);
+    }
+  }, [paragraph.translation]);
+
+  const handleInput = (e) => {
+    autoResize(e.target);
+    onTranslationChange(e.target.value);
+  };
+
+  return (
+    <div className="text-pair">
+      <div className="source-line">
+        <div className="source-accent-bar" />
+        <p className="source-text" style={paragraph.isHeading ? { fontWeight: 700, fontSize: '18px' } : undefined}>
+          {paragraph.source}
+        </p>
+      </div>
+      <textarea
+        ref={textareaRef}
+        className={`translation-input ${paragraph.translation ? 'has-content' : ''}`}
+        placeholder="Traduza aqui..."
+        value={paragraph.translation}
+        onInput={handleInput}
+        onChange={handleInput}
+        rows={1}
+      />
+    </div>
+  );
+});
+
+TranslationRow.displayName = 'TranslationRow';
 
 export default App;
