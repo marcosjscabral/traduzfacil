@@ -35,6 +35,27 @@ const Icons = {
   ),
 };
 
+/* ─────────────────── SENTENCE SPLITTER ─────────────────── */
+function splitIntoSentences(text) {
+  // Split on sentence-ending punctuation followed by a space (or end)
+  // This keeps the punctuation attached to the sentence
+  const raw = text.split(/(?<=[.!?;:])\s+/);
+
+  // Merge very short fragments back (e.g. "Mr. Smith" or "Dr. Jones")
+  const merged = [];
+  for (const part of raw) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    if (merged.length > 0 && merged[merged.length - 1].length < 40) {
+      merged[merged.length - 1] += ' ' + trimmed;
+    } else {
+      merged.push(trimmed);
+    }
+  }
+
+  return merged.length > 0 ? merged : [text];
+}
+
 /* ─────────────────── EPUB PARSER (via JSZip) ─────────────────── */
 async function parseEpub(arrayBuffer) {
   const zip = await JSZip.loadAsync(arrayBuffer);
@@ -90,23 +111,36 @@ async function parseEpub(arrayBuffer) {
     const body = doc.querySelector('body');
     if (!body) continue;
 
-    // Get all content nodes
+    // Get all content nodes and split into sentences
     const nodes = body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote');
     const chapterParagraphs = [];
     const seenTexts = new Set();
+    let sentenceCounter = 0;
 
-    nodes.forEach((node, idx) => {
-      const text = (node.textContent || '').trim();
-      if (text.length > 3 && !seenTexts.has(text)) {
-        seenTexts.add(text);
-        const tag = node.tagName.toLowerCase();
-        chapterParagraphs.push({
-          id: `ch${chapterIndex}_p${idx}`,
-          source: text,
-          translation: '',
-          isHeading: tag.startsWith('h'),
-        });
-      }
+    nodes.forEach((node) => {
+      const fullText = (node.textContent || '').trim();
+      if (fullText.length < 3) return;
+
+      const tag = node.tagName.toLowerCase();
+      const isHeading = tag.startsWith('h');
+
+      // Split paragraph into sentences
+      // Match sentence-ending punctuation followed by space or end-of-string
+      const sentences = splitIntoSentences(fullText);
+
+      sentences.forEach((sentence) => {
+        const clean = sentence.trim();
+        if (clean.length > 2 && !seenTexts.has(clean)) {
+          seenTexts.add(clean);
+          chapterParagraphs.push({
+            id: `ch${chapterIndex}_s${sentenceCounter}`,
+            source: clean,
+            translation: '',
+            isHeading,
+          });
+          sentenceCounter++;
+        }
+      });
     });
 
     if (chapterParagraphs.length > 0) {
@@ -475,12 +509,9 @@ const TranslationRow = React.memo(({ paragraph, onTranslationChange }) => {
 
   return (
     <div className="text-pair">
-      <div className="source-line">
-        <div className="source-accent-bar" />
-        <p className="source-text" style={paragraph.isHeading ? { fontWeight: 700, fontSize: '18px' } : undefined}>
-          {paragraph.source}
-        </p>
-      </div>
+      <p className={`source-text ${paragraph.isHeading ? 'heading' : ''}`}>
+        {paragraph.source}
+      </p>
       <textarea
         ref={textareaRef}
         className={`translation-input ${paragraph.translation ? 'has-content' : ''}`}

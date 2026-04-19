@@ -485,7 +485,7 @@ body {
   white-space: nowrap;
 }
 
-/* ============ TRANSLATION LIST — BOOK LAYOUT ============ */
+/* ============ TRANSLATION LIST — SENTENCE-BY-SENTENCE ============ */
 .translation-list {
   display: flex;
   flex-direction: column;
@@ -494,76 +494,53 @@ body {
 }
 
 /*
-  Each "text-pair" acts like a line in a notebook:
-  - Source text on top (the original line you're reading/studying)
-  - Translation field immediately below (like a ruled line to write on)
+  Clean notebook layout:
+  - Sentence text on top
+  - Translation input immediately below
+  - Minimal separation between pairs
 */
 .text-pair {
-  border-bottom: 1px solid var(--border-light);
-  transition: background var(--transition);
+  padding: 0 4px;
 }
 
-.text-pair:hover {
-  background: rgba(109, 92, 206, 0.02);
-}
-
-.text-pair:focus-within {
-  background: var(--accent-softer);
-}
-
-/* Source line */
-.source-line {
-  display: flex;
-  align-items: baseline;
-  gap: 0;
-  padding: 14px 16px 4px;
-}
-
-.source-accent-bar {
-  width: 3px;
-  min-height: 18px;
-  align-self: stretch;
-  background: var(--accent);
-  border-radius: 2px;
-  opacity: 0.15;
-  transition: opacity var(--transition);
-  flex-shrink: 0;
-  margin-right: 12px;
-}
-
-.text-pair:hover .source-accent-bar,
-.text-pair:focus-within .source-accent-bar {
-  opacity: 0.6;
-}
-
+/* Source text — the original sentence */
 .source-text {
   font-family: 'Lora', Georgia, serif;
-  font-size: 15.5px;
-  line-height: 1.7;
+  font-size: 16px;
+  line-height: 1.75;
   color: var(--text-body);
-  flex: 1;
+  padding: 10px 0 0 0;
   overflow-wrap: break-word;
 }
 
-/* Translation input — clean "ruled line" feel */
+.source-text.heading {
+  font-weight: 700;
+  font-size: 18px;
+  padding-top: 16px;
+}
+
+/* Translation input — right below the sentence */
 .translation-input {
+  display: block;
   width: 100%;
-  min-height: 36px;
-  padding: 4px 16px 10px 31px;
+  min-height: 28px;
+  padding: 0 0 8px 0;
   background: transparent;
   border: none;
+  border-bottom: 1px solid var(--border-light);
   outline: none;
   color: var(--accent);
   font-family: 'Inter', sans-serif;
   font-size: 14px;
-  line-height: 1.65;
+  line-height: 1.6;
   resize: none;
   transition: all var(--transition);
+  margin-bottom: 4px;
 }
 
 .translation-input:focus {
-  background: var(--bg-input-focus);
-  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  border-bottom-color: var(--accent-border);
+  background: var(--accent-softer);
 }
 
 .translation-input::placeholder {
@@ -574,6 +551,7 @@ body {
 
 .translation-input.has-content {
   color: var(--success);
+  border-bottom-color: rgba(22, 163, 74, 0.15);
 }
 
 /* ============ FLOATING BAR ============ */
