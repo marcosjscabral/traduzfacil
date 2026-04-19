@@ -111,6 +111,20 @@ body {
   gap: 12px;
 }
 
+.mobile-menu-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.mobile-menu-toggle svg {
+  width: 24px;
+  height: 24px;
+}
+
 .auto-save-select {
   background: rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(0, 0, 0, 0.1);
@@ -1483,6 +1497,41 @@ body {
 @media (max-width: 640px) {
   .app-header { height: 56px; }
 
+  .mobile-menu-toggle {
+    display: block;
+    margin-left: auto;
+  }
+
+  .header-actions {
+    position: absolute;
+    top: 56px;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    flex-direction: column;
+    padding: 16px;
+    gap: 12px;
+    display: none;
+    align-items: stretch;
+    box-shadow: var(--shadow-md);
+  }
+
+  .header-actions.is-open {
+    display: flex;
+  }
+
+  .header-actions > * {
+    justify-content: flex-start;
+  }
+
+  .user-menu {
+    justify-content: flex-start;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-light);
+  }
+
   .book-card {
     flex-direction: column;
     align-items: center;
@@ -1529,11 +1578,7 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .user-name { display: none; }
-
-  .header-actions {
-    gap: 6px;
-  }
+  .user-name { display: initial; }
 
   .modal-content {
     padding: 28px 20px;

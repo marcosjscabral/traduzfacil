@@ -103,6 +103,9 @@ const Icons = {
   Infinity: () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z"/></svg>
   ),
+  Menu: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  ),
 };
 
 /* ─────────────────── ADMIN CONFIG ─────────────────── */
@@ -470,6 +473,7 @@ const App = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   /* ─── Admin State ─── */
   const [adminCatalog, setAdminCatalog] = useState([]);
@@ -1009,7 +1013,12 @@ const App = () => {
           <Icons.Globe />
           <h1 className="gradient-text">Traxbook<span></span></h1>
         </div>
-        <div className="header-actions">
+        
+        <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          {mobileMenuOpen ? <Icons.X /> : <Icons.Menu />}
+        </button>
+
+        <div className={`header-actions ${mobileMenuOpen ? 'is-open' : ''}`}>
           {currentView === 'editor' && hasBook && (
             <>
               <select 
