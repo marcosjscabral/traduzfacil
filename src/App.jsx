@@ -13,7 +13,11 @@ const Icons = {
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
   ),
   Save: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1-2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15.222 2H5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7.778a2 2 0 0 0-.586-1.414l-3.778-3.778a2 2 0 0 0-1.414-.586Z"/>
+      <path d="M15 2v5a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V2"/>
+      <path d="M17 22v-8a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v8"/>
+    </svg>
   ),
   Trash: () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -543,12 +547,12 @@ const App = () => {
                 <option value={10}>Auto-save: 10 min</option>
               </select>
               <button 
-                className="btn btn-ghost manual-save-btn" 
+                className={`btn btn-ghost manual-save-btn ${status === 'Modificado' ? 'is-modified' : ''}`} 
                 onClick={handleManualSave} 
-                disabled={status === 'Salvo'}
-                title="Salvar Manualmente"
+                disabled={status === 'Salvo' || status === 'Salvando...'}
+                title={status === 'Modificado' ? "Salvar alterações" : "Tudo salvo"}
               >
-                <Icons.Save /> {status}
+                <Icons.Save /> {status === 'Modificado' ? 'Salvar' : status}
               </button>
               <button className="btn btn-ghost" onClick={() => exportAsEpub(metadata, chapters)} title="Exportar novo EPUB">
                 <Icons.Download /> Exportar EPUB

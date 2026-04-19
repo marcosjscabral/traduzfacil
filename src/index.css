@@ -133,6 +133,31 @@ body {
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
 }
 
+.manual-save-btn {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.manual-save-btn.is-modified {
+  color: var(--primary);
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.2);
+  opacity: 1;
+  font-weight: 600;
+}
+
+.manual-save-btn:disabled:not(.is-modified) {
+  cursor: default;
+  background: transparent;
+  pointer-events: none;
+}
+
+.manual-save-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* ============ STATUS PILL ============ */
 .status-pill {
   display: flex;
