@@ -803,20 +803,7 @@ const App = () => {
     }
   }, [bookId, metadata]);
 
-  /* ─── Auto-Save Interval ─── */
-  useEffect(() => {
-    if (autoSaveInterval === 0 || status === 'Saved') return;
-    const interval = setInterval(() => {
-      if (status === 'Modified') {
-        if (isPremium) {
-          handleSaveToCloud(true);
-        } else {
-          handleManualSave();
-        }
-      }
-    }, autoSaveInterval * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [autoSaveInterval, status, isPremium, handleSaveToCloud, handleManualSave]);
+
 
   /* ─── Save to Cloud (Premium-Gated) ─── */
   const handleSaveToCloud = useCallback(async (isSilent = false) => {
@@ -878,6 +865,21 @@ const App = () => {
       setStatus('Modified');
     }
   }, [metadata, currentChapter, user, isPremium]);
+
+  /* ─── Auto-Save Interval ─── */
+  useEffect(() => {
+    if (autoSaveInterval === 0 || status === 'Saved') return;
+    const interval = setInterval(() => {
+      if (status === 'Modified') {
+        if (isPremium) {
+          handleSaveToCloud(true);
+        } else {
+          handleManualSave();
+        }
+      }
+    }, autoSaveInterval * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [autoSaveInterval, status, isPremium, handleSaveToCloud, handleManualSave]);
 
   /* ─── Translation change ─── */
   const handleTranslationChange = useCallback((chapterIdx, paraIdx, value) => {
