@@ -1417,7 +1417,7 @@ const App = () => {
                             <>
                               <td>{book.title}</td>
                               <td>{book.author}</td>
-                              <td><span className={`mk-diff mode-${(book.difficulty || 'beginner').toLowerCase()}`}>{book.difficulty || 'Beginner'}</span></td>
+                              <td><span className={`mk-diff mode-${(book.difficulty || 'beginner').trim().toLowerCase()}`}>{book.difficulty || 'Beginner'}</span></td>
                               <td>{book.Language || '—'}</td>
                               <td>{book.free ? '✓ Free' : '💎 Paid'}</td>
                               <td>{book.free ? '—' : `$${((book.price_cents || 0) / 100).toFixed(2)}`}</td>
@@ -1578,7 +1578,7 @@ const App = () => {
                         </div>
                         <div className="mk-info">
                           <div className="mk-meta-row">
-                            <span className={`mk-diff mode-${(book.difficulty || 'beginner').toLowerCase()}`}>
+                            <span className={`mk-diff mode-${(book.difficulty || 'beginner').trim().toLowerCase()}`}>
                               {book.difficulty || 'Beginner'}
                             </span>
                             <span className="mk-language">
