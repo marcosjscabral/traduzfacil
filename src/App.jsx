@@ -1060,7 +1060,7 @@ const App = () => {
   }, [fetchAdminCatalog]);
 
   const handleAdminDeleteBook = useCallback(async (id) => {
-    if (!window.confirm('Delete this book from the catalog?')) return;
+    if (!window.confirm("Tem certeza que deseja excluir este livro do catálogo?")) return;
     try {
       const { error } = await supabase.from('catalog').delete().eq('id', id);
       if (error) throw error;
@@ -1217,9 +1217,7 @@ const App = () => {
               >
                 <Icons.Cloud /> Save to Cloud
               </button>
-              <button className="btn btn-ghost" onClick={handleDownloadCSV} title="Download flashcards for Anki">
-                <Icons.Download /> .csv to Anki
-              </button>
+
               <button className="btn btn-ghost" onClick={() => exportAsEpub(metadata, chapters)} title="Export new EPUB">
                 <Icons.Download /> Export EPUB
               </button>
@@ -1663,7 +1661,7 @@ const App = () => {
                             <div className="fc-actions">
                               <button className="btn btn-ghost btn-sm" onClick={() => setEditingCard(card)} title="Edit"><Icons.Edit /></button>
                               <button className="btn btn-ghost btn-sm" style={{ color: '#ef4444' }} onClick={async () => {
-                                if (!window.confirm("Delete this flashcard?")) return;
+                                if (!window.confirm("Tem certeza que deseja excluir este flashcard?")) return;
                                 try {
                                   await supabase.from('flashcards').delete().eq('id', card.id);
                                   setMyFlashcards(prev => prev.filter(c => c.id !== card.id));
