@@ -1318,7 +1318,7 @@ const App = () => {
               )}
               <button 
                 className="btn btn-ghost" 
-                onClick={handleSaveToCloud} 
+                onClick={() => handleSaveToCloud()} 
                 disabled={status === 'Saving...'}
                 title="Save your translation progress to the cloud"
               >
@@ -1580,7 +1580,9 @@ const App = () => {
             </h2>
             <p>
               Load your EPUB file and start translating instantly.
-              All your progress is saved offline in your browser.
+              {isPremium 
+                ? "All your progress is securely saved in the cloud (Traxbook Drive)."
+                : "All your progress is saved offline in your browser."}
             </p>
 
             {/* ─── Tabs Navigation ─── */}
@@ -1631,7 +1633,7 @@ const App = () => {
                   />
                 </div>
 
-                {library.length > 0 && (
+                {(!isPremium && library.length > 0) && (
                   <div className="library-section">
                     <h3 className="library-title">Your Local Library</h3>
                     <div className="library-grid">
