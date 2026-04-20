@@ -115,6 +115,32 @@ const Icons = {
 // Add your admin email(s) here
 const ADMIN_EMAILS = ['marcosjscabral@gmail.com'];
 
+/* ─────────────────── STRIPE PRICING CONFIG ─────────────────── */
+const PREMIUM_PLAN = {
+  name: 'Traxbook Premium',
+  description: 'Infinite upload, Cloud Sync, Anki Flashcards, Multi-device sync, and Exclusive Discounts.',
+  price_cents: 1990,
+  currency: 'usd',
+  interval: 'month',
+  stripe_price_id: 'price_1TOIa5F0lxCQwtFq9pAZKIOH',
+  stripe_product_id: 'prod_UN2fqt7rN7Qmzz',
+  stripe_payment_link: 'https://buy.stripe.com/4gM7sLd9Y1iObeg35wcwg00',
+};
+
+// Centralized map: stripe_price_id → Payment Link URL
+const STRIPE_PAYMENT_LINKS = {
+  'price_1TOIa5F0lxCQwtFq9pAZKIOH': 'https://buy.stripe.com/4gM7sLd9Y1iObeg35wcwg00',  // Premium Subscription
+  'price_1TOIaIF0lxCQwtFqj99VXrl0': 'https://buy.stripe.com/5kQ00j4DsaTodmo35wcwg01',  // Dracula
+  'price_1TOIaIF0lxCQwtFq9YDWh6dz': 'https://buy.stripe.com/14A8wPgmagdIgyA8pQcwg02',  // Sherlock Holmes
+  'price_1TOIaQF0lxCQwtFqiDtYDNU8': 'https://buy.stripe.com/6oUfZhc5U8Lgeqs21scwg03',  // Access Combo
+};
+
+// Helper: resolve the correct payment link for a book or plan
+function getPaymentLink(stripePriceId, fallbackPaymentLink) {
+  if (fallbackPaymentLink) return fallbackPaymentLink;
+  return STRIPE_PAYMENT_LINKS[stripePriceId] || null;
+}
+
 /* ─────────────────── MOCK MARKETPLACE (SUPABASE PREVIEW) ─────────────────── */
 const MOCK_MARKETPLACE = [
   {
@@ -127,6 +153,7 @@ const MOCK_MARKETPLACE = [
     free: false,
     price_cents: 500,
     stripe_price_id: 'price_1TOIaIF0lxCQwtFqj99VXrl0',
+    stripe_payment_link: 'https://buy.stripe.com/5kQ00j4DsaTodmo35wcwg01',
     Language: 'English'
   },
   {
@@ -134,11 +161,12 @@ const MOCK_MARKETPLACE = [
     title: 'Sherlock Holmes',
     author: 'Arthur Conan Doyle',
     difficulty: 'Intermediate',
-    epub_url: 'https://raw.githubusercontent.com/IDPF/epub3-samples/master/30/moby-dick/moby-dick.epub',
+    epub_url: 'https://raw.githubusercontent.com/IDPF/epub3-samples/master/30/sherlock-holmes/sherlock-holmes.epub',
     cover_url: 'https://m.media-amazon.com/images/I/81B+GVD0tVL._AC_UF1000,1000_QL80_.jpg',
     free: false,
     price_cents: 500,
     stripe_price_id: 'price_1TOIaIF0lxCQwtFq9YDWh6dz',
+    stripe_payment_link: 'https://buy.stripe.com/14A8wPgmagdIgyA8pQcwg02',
     Language: 'English'
   },
   {
@@ -149,6 +177,7 @@ const MOCK_MARKETPLACE = [
     epub_url: 'https://raw.githubusercontent.com/IDPF/epub3-samples/master/30/alice/alice.epub',
     cover_url: 'https://m.media-amazon.com/images/I/91tZzI+2YhL._AC_UF1000,1000_QL80_.jpg',
     free: true,
+    price_cents: 0,
     Language: 'English'
   },
   {
@@ -158,9 +187,8 @@ const MOCK_MARKETPLACE = [
     difficulty: 'Advanced',
     epub_url: 'https://raw.githubusercontent.com/IDPF/epub3-samples/master/30/moby-dick/moby-dick.epub',
     cover_url: 'https://m.media-amazon.com/images/I/81fH+x4A1GL._AC_UF1000,1000_QL80_.jpg',
-    free: false,
-    price_cents: 500,
-    stripe_price_id: 'price_1TOIaIF0lxCQwtFqj99VXrl0',
+    free: true,
+    price_cents: 0,
     Language: 'English'
   }
 ];
@@ -498,7 +526,7 @@ const App = () => {
   /* ─── Admin State ─── */
   const [adminCatalog, setAdminCatalog] = useState([]);
   const [adminEditingBook, setAdminEditingBook] = useState(null);
-  const [adminNewBook, setAdminNewBook] = useState({ title: '', author: '', difficulty: 'Beginner', epub_url: '', cover_url: '', free: true, price_cents: 0, stripe_price_id: '', Language: 'English' });
+  const [adminNewBook, setAdminNewBook] = useState({ title: '', author: '', difficulty: 'Beginner', epub_url: '', cover_url: '', free: true, price_cents: 0, stripe_price_id: '', stripe_payment_link: '', Language: 'English' });
 
   const hasBook = chapters.length > 0;
   const isAdmin = useMemo(() => user && ADMIN_EMAILS.includes(user.email), [user]);
@@ -1138,10 +1166,11 @@ const App = () => {
         free: adminNewBook.free,
         price_cents: adminNewBook.price_cents || 0,
         stripe_price_id: adminNewBook.stripe_price_id || null,
+        stripe_payment_link: adminNewBook.stripe_payment_link || null,
         Language: adminNewBook.Language || 'English',
       }]);
       if (error) throw error;
-      setAdminNewBook({ title: '', author: '', difficulty: 'Beginner', epub_url: '', cover_url: '', free: true, price_cents: 0, stripe_price_id: '', Language: 'English' });
+      setAdminNewBook({ title: '', author: '', difficulty: 'Beginner', epub_url: '', cover_url: '', free: true, price_cents: 0, stripe_price_id: '', stripe_payment_link: '', Language: 'English' });
       fetchAdminCatalog();
       alert('Book added to catalog!');
     } catch (e) {
@@ -1160,6 +1189,7 @@ const App = () => {
         free: book.free,
         price_cents: book.price_cents || 0,
         stripe_price_id: book.stripe_price_id || null,
+        stripe_payment_link: book.stripe_payment_link || null,
         Language: book.Language || 'English',
       }).eq('id', book.id);
       if (error) throw error;
@@ -1453,9 +1483,9 @@ const App = () => {
               <div className="pricing-card pricing-card-pro">
                 <div className="pricing-popular-tag">Most Popular</div>
                 <div className="pricing-card-header">
-                  <h3><Icons.Crown /> {premiumPlan.name}</h3>
+                  <h3><Icons.Crown /> {PREMIUM_PLAN.name}</h3>
                   <div className="pricing-price">
-                    <span className="pricing-amount">${(premiumPlan.price_cents / 100).toFixed(2)}</span>
+                    <span className="pricing-amount">${(PREMIUM_PLAN.price_cents / 100).toFixed(2)}</span>
                     <span className="pricing-period">/month</span>
                   </div>
                 </div>
@@ -1469,14 +1499,14 @@ const App = () => {
                 </ul>
                  <button
                   className="btn btn-primary btn-block btn-lg"
-                  data-stripe-price-id={premiumPlan.stripe_price_id}
+                  data-stripe-price-id={PREMIUM_PLAN.stripe_price_id}
                   onClick={() => {
                     // MANIFESTO: Apenas pessoas logadas podem comprar plano premium
                     if (!user) {
                       setShowAuthModal(true);
                     } else {
-                      // Integrated Stripe Redirect using the dynamic ID set in Admin
-                      window.location.href = `https://checkout.stripe.com/pay/${premiumPlan.stripe_price_id}`;
+                      // Redirect to real Stripe Payment Link
+                      window.location.href = PREMIUM_PLAN.stripe_payment_link;
                     }
                   }}
                 >
@@ -1520,6 +1550,7 @@ const App = () => {
                   <>
                     <input type="number" placeholder="Price (cents)" value={adminNewBook.price_cents} onChange={(e) => setAdminNewBook(p => ({ ...p, price_cents: Number(e.target.value) }))} />
                     <input placeholder="Stripe Price ID (price_...)" value={adminNewBook.stripe_price_id} onChange={(e) => setAdminNewBook(p => ({ ...p, stripe_price_id: e.target.value }))} />
+                    <input placeholder="Stripe Payment Link (https://buy.stripe.com/...)" value={adminNewBook.stripe_payment_link} onChange={(e) => setAdminNewBook(p => ({ ...p, stripe_payment_link: e.target.value }))} />
                   </>
                 )}
               </div>
@@ -1595,28 +1626,32 @@ const App = () => {
             <div className="admin-card glass">
               <h3><Icons.CreditCard /> Subscription Plan (Stripe)</h3>
               <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                Configure the monthly Pro plan that unlocks "Save to Cloud" for subscribers.
+                Active monthly Pro plan connected to Stripe. Payment Links are configured and live.
               </p>
               <div className="admin-form-grid">
                 <div className="admin-stripe-row">
                   <label>Plan Name</label>
-                  <input defaultValue="Traxbook Pro Monthly" disabled />
+                  <input value={PREMIUM_PLAN.name} readOnly />
                 </div>
                 <div className="admin-stripe-row">
                   <label>Monthly Price</label>
-                  <input defaultValue="$9.90" disabled />
+                  <input value={`$${(PREMIUM_PLAN.price_cents / 100).toFixed(2)} / ${PREMIUM_PLAN.interval}`} readOnly />
                 </div>
                 <div className="admin-stripe-row">
                   <label>Stripe Price ID</label>
-                  <input placeholder="price_XXXXXXXXXXXXXXX" defaultValue="" />
+                  <input value={PREMIUM_PLAN.stripe_price_id} readOnly />
                 </div>
                 <div className="admin-stripe-row">
-                  <label>Stripe Webhook URL</label>
-                  <input placeholder="https://your-domain.com/api/stripe/webhook" defaultValue="" />
+                  <label>Payment Link</label>
+                  <input value={PREMIUM_PLAN.stripe_payment_link} readOnly />
+                </div>
+                <div className="admin-stripe-row">
+                  <label>Stripe Product ID</label>
+                  <input value={PREMIUM_PLAN.stripe_product_id} readOnly />
                 </div>
               </div>
               <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '16px' }}>
-                ⚠️ These fields are display-only for now. Connect your Stripe account and update the environment variables to activate payment processing.
+                ✅ Payment Links estão configurados e prontos. Para ativar completamente, configure um Stripe Webhook para atualizar <code>profiles.is_premium</code> automaticamente após a compra.
               </p>
             </div>
           </section>
@@ -1774,7 +1809,7 @@ const App = () => {
                           style={{ background: 'white', color: '#4f46e5', border: 'none' }}
                           onClick={() => {
                             if (!user) setShowAuthModal(true);
-                            else window.location.href = `https://checkout.stripe.com/pay/price_1TOIaQF0lxCQwtFqiDtYDNU8`;
+                            else window.location.href = getPaymentLink('price_1TOIaQF0lxCQwtFqiDtYDNU8');
                           }}
                         >
                           Buy Combo
@@ -1831,8 +1866,13 @@ const App = () => {
                                 if (!book.free && !isPremium && !user) {
                                   setShowAuthModal(true);
                                 } else if (!book.free && !isPremium) {
-                                  // Buy individual book
-                                  window.location.href = `https://checkout.stripe.com/pay/${book.stripe_price_id || 'price_1TOIaIF0lxCQwtFqj99VXrl0'}`;
+                                  // Buy individual book via Stripe Payment Link
+                                  const payLink = getPaymentLink(book.stripe_price_id, book.stripe_payment_link);
+                                  if (payLink) {
+                                    window.location.href = payLink;
+                                  } else {
+                                    alert('Payment link not configured for this book. Contact support.');
+                                  }
                                 } else {
                                   handleDownloadMarketplaceEpub(book);
                                 }
