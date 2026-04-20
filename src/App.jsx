@@ -1604,32 +1604,76 @@ const App = () => {
             </button>
             <div className="admin-header">
               <h2><Icons.Settings /> Admin Dashboard</h2>
-              <p>Manage the Public Library catalog, pricing, and subscription plans.</p>
+              <p>Manage catalog, pricing, and the Premium subscription.</p>
             </div>
 
-            {/* ─── Add New Book Form ─── */}
+            {/* ─── PREMIUM PLAN CARD ─── */}
+            <div className="admin-card glass" style={{ borderLeft: '4px solid #8b5cf6' }}>
+              <h3 style={{ marginBottom: '16px' }}><Icons.Crown /> Premium Plan Configuration</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Plan Name</label>
+                  <input value={PREMIUM_PLAN.name} onChange={(e) => setPREMIUM_PLAN(p => ({ ...p, name: e.target.value }))} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Price (cents) → ${(PREMIUM_PLAN.price_cents / 100).toFixed(2)}</label>
+                  <input type="number" value={PREMIUM_PLAN.price_cents} onChange={(e) => setPREMIUM_PLAN(p => ({ ...p, price_cents: Number(e.target.value) }))} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Interval</label>
+                  <select value={PREMIUM_PLAN.interval} onChange={(e) => setPREMIUM_PLAN(p => ({ ...p, interval: e.target.value }))} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+                    <option value="month">month</option><option value="year">year</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Stripe Product ID</label>
+                  <input value={PREMIUM_PLAN.stripe_product_id} onChange={(e) => setPREMIUM_PLAN(p => ({ ...p, stripe_product_id: e.target.value }))} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '12px' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Stripe Price ID</label>
+                  <input value={PREMIUM_PLAN.stripe_price_id} onChange={(e) => setPREMIUM_PLAN(p => ({ ...p, stripe_price_id: e.target.value }))} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '12px' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Payment Link URL</label>
+                  <input value={PREMIUM_PLAN.stripe_payment_link} onChange={(e) => setPREMIUM_PLAN(p => ({ ...p, stripe_payment_link: e.target.value }))} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '12px' }} />
+                </div>
+              </div>
+              <div style={{ marginTop: '16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button className="btn btn-primary btn-sm" onClick={() => {
+                  localStorage.setItem('traxbook_premium_plan', JSON.stringify(PREMIUM_PLAN));
+                  alert('✅ Premium plan saved!');
+                }}>
+                  <Icons.Check /> Save Premium Plan
+                </button>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  Displayed: <strong>${(PREMIUM_PLAN.price_cents / 100).toFixed(2)}/{PREMIUM_PLAN.interval}</strong>
+                </span>
+              </div>
+            </div>
+
+            {/* ─── ADD NEW BOOK ─── */}
             <div className="admin-card glass">
-              <h3><Icons.Plus /> Add New Book to Catalog</h3>
-              <div className="admin-form-grid">
-                <input placeholder="Title *" value={adminNewBook.title} onChange={(e) => setAdminNewBook(p => ({ ...p, title: e.target.value }))} />
-                <input placeholder="Author" value={adminNewBook.author} onChange={(e) => setAdminNewBook(p => ({ ...p, author: e.target.value }))} />
-                <input placeholder="EPUB URL" value={adminNewBook.epub_url} onChange={(e) => setAdminNewBook(p => ({ ...p, epub_url: e.target.value }))} />
-                <input placeholder="Cover Image URL" value={adminNewBook.cover_url} onChange={(e) => setAdminNewBook(p => ({ ...p, cover_url: e.target.value }))} />
-                <select value={adminNewBook.difficulty} onChange={(e) => setAdminNewBook(p => ({ ...p, difficulty: e.target.value }))}>
-                  <option value="Beginner">Beginner</option>
-                  <option value="Intermediate">Intermediate</option>
-                  <option value="Advanced">Advanced</option>
-                  <option value="Difficult">Difficult</option>
+              <h3><Icons.Plus /> Add New Book</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <input placeholder="Title *" value={adminNewBook.title} onChange={(e) => setAdminNewBook(p => ({ ...p, title: e.target.value }))} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                <input placeholder="Author" value={adminNewBook.author} onChange={(e) => setAdminNewBook(p => ({ ...p, author: e.target.value }))} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                <input placeholder="EPUB URL" value={adminNewBook.epub_url} onChange={(e) => setAdminNewBook(p => ({ ...p, epub_url: e.target.value }))} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                <input placeholder="Cover Image URL" value={adminNewBook.cover_url} onChange={(e) => setAdminNewBook(p => ({ ...p, cover_url: e.target.value }))} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                <select value={adminNewBook.difficulty} onChange={(e) => setAdminNewBook(p => ({ ...p, difficulty: e.target.value }))} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+                  <option value="Beginner">Beginner</option><option value="Intermediate">Intermediate</option><option value="Advanced">Advanced</option><option value="Difficult">Difficult</option>
                 </select>
-                <input placeholder="Language" value={adminNewBook.Language} onChange={(e) => setAdminNewBook(p => ({ ...p, Language: e.target.value }))} />
-                <label className="admin-checkbox">
-                  <input type="checkbox" checked={adminNewBook.free} onChange={(e) => setAdminNewBook(p => ({ ...p, free: e.target.checked }))} /> Free
+                <input placeholder="Language" value={adminNewBook.Language} onChange={(e) => setAdminNewBook(p => ({ ...p, Language: e.target.value }))} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px' }}>
+                  <input type="checkbox" checked={adminNewBook.free} onChange={(e) => setAdminNewBook(p => ({ ...p, free: e.target.checked }))} />
+                  <span>Free Book</span>
                 </label>
                 {!adminNewBook.free && (
+                  <input type="number" placeholder="Price (cents, ex: 500 = $5.00)" value={adminNewBook.price_cents} onChange={(e) => setAdminNewBook(p => ({ ...p, price_cents: Number(e.target.value) }))} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                )}
+                {!adminNewBook.free && (
                   <>
-                    <input type="number" placeholder="Price (cents)" value={adminNewBook.price_cents} onChange={(e) => setAdminNewBook(p => ({ ...p, price_cents: Number(e.target.value) }))} />
-                    <input placeholder="Stripe Price ID (price_...)" value={adminNewBook.stripe_price_id} onChange={(e) => setAdminNewBook(p => ({ ...p, stripe_price_id: e.target.value }))} />
-                    <input placeholder="Stripe Payment Link (https://buy.stripe.com/...)" value={adminNewBook.stripe_payment_link} onChange={(e) => setAdminNewBook(p => ({ ...p, stripe_payment_link: e.target.value }))} />
+                    <input placeholder="Stripe Price ID (price_...)" value={adminNewBook.stripe_price_id} onChange={(e) => setAdminNewBook(p => ({ ...p, stripe_price_id: e.target.value }))} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '12px' }} />
+                    <input placeholder="Payment Link (https://buy.stripe.com/...)" value={adminNewBook.stripe_payment_link} onChange={(e) => setAdminNewBook(p => ({ ...p, stripe_payment_link: e.target.value }))} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '12px' }} />
                   </>
                 )}
               </div>
@@ -1638,153 +1682,114 @@ const App = () => {
               </button>
             </div>
 
-            {/* ─── Catalog Table ─── */}
+            {/* ─── BOOK CATALOG CARDS ─── */}
             <div className="admin-card glass">
               <h3><Icons.Book /> Catalog ({adminCatalog.length} books)</h3>
               {adminCatalog.length === 0 ? (
                 <p style={{ opacity: 0.5 }}>No books in catalog yet. Add one above.</p>
               ) : (
-                <div className="admin-table-wrapper">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Title</th>
-                        <th>Author</th>
-                        <th>Difficulty</th>
-                        <th>Language</th>
-                        <th>Free</th>
-                        <th>Price</th>
-                        <th>Stripe</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {adminCatalog.map(book => (
-                        <tr key={book.id}>
-                          {adminEditingBook?.id === book.id ? (
-                            <>
-                              <td><input value={adminEditingBook.title} onChange={(e) => setAdminEditingBook(p => ({ ...p, title: e.target.value }))} /></td>
-                              <td><input value={adminEditingBook.author || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, author: e.target.value }))} /></td>
-                              <td>
-                                <select value={adminEditingBook.difficulty || 'Beginner'} onChange={(e) => setAdminEditingBook(p => ({ ...p, difficulty: e.target.value }))}>
-                                  <option>Beginner</option><option>Intermediate</option><option>Advanced</option><option>Difficult</option>
-                                </select>
-                              </td>
-                              <td><input value={adminEditingBook.Language || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, Language: e.target.value }))} /></td>
-                              <td>
-                                <input type="checkbox" checked={adminEditingBook.free} onChange={(e) => setAdminEditingBook(p => ({ ...p, free: e.target.checked }))} />
-                              </td>
-                              <td><input type="number" value={adminEditingBook.price_cents || 0} onChange={(e) => setAdminEditingBook(p => ({ ...p, price_cents: Number(e.target.value) }))} /></td>
-                              <td colSpan="2">
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                  <input placeholder="EPUB URL" value={adminEditingBook.epub_url || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, epub_url: e.target.value }))} style={{ fontSize: '11px' }} />
-                                  <input placeholder="Stripe Price ID" value={adminEditingBook.stripe_price_id || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, stripe_price_id: e.target.value }))} style={{ fontSize: '11px' }} />
-                                  <input placeholder="Payment Link URL" value={adminEditingBook.stripe_payment_link || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, stripe_payment_link: e.target.value }))} style={{ fontSize: '11px' }} />
-                                </div>
-                                <div style={{ marginTop: '6px', display: 'flex', gap: '4px' }}>
-                                  <button className="btn btn-primary btn-sm" onClick={() => handleAdminUpdateBook(adminEditingBook)}><Icons.Check /> Save</button>
-                                  <button className="btn btn-ghost btn-sm" onClick={() => setAdminEditingBook(null)}><Icons.X /></button>
-                                </div>
-                              </td>
-                            </>
-                          ) : (
-                            <>
-                              <td>{book.title}</td>
-                              <td>{book.author}</td>
-                              <td><span className={`mk-diff mode-${(book.difficulty || 'beginner').trim().toLowerCase()}`}>{book.difficulty || 'Beginner'}</span></td>
-                              <td>{book.Language || '—'}</td>
-                              <td>{book.free ? '✓ Free' : '💎 Paid'}</td>
-                              <td>{book.free ? '—' : `$${((book.price_cents || 0) / 100).toFixed(2)}`}</td>
-                              <td style={{ fontSize: '11px', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {book.stripe_price_id ? (
-                                  <span title={`Price: ${book.stripe_price_id}\nLink: ${book.stripe_payment_link || 'N/A'}`} style={{ cursor: 'help', color: '#10b981' }}>✅ Configured</span>
-                                ) : (
-                                  <span style={{ color: '#ef4444' }}>⚠️ Missing</span>
-                                )}
-                              </td>
-                              <td className="admin-actions">
-                                <button className="btn btn-ghost btn-sm" onClick={() => setAdminEditingBook({ ...book })} title="Edit"><Icons.Edit /></button>
-                                <button className="btn btn-ghost btn-sm" onClick={() => handleAdminDeleteBook(book.id)} title="Delete" style={{ color: '#ef4444' }}><Icons.Trash /></button>
-                              </td>
-                            </>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div style={{ display: 'grid', gap: '12px' }}>
+                  {adminCatalog.map(book => (
+                    <div key={book.id} style={{ padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <strong style={{ fontSize: '1rem' }}>{book.title}</strong>
+                          <span className={`mk-diff mode-${(book.difficulty || 'beginner').trim().toLowerCase()}`} style={{ fontSize: '10px' }}>{book.difficulty || 'Beginner'}</span>
+                        </div>
+                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                          {book.author || 'Unknown'} · {book.Language || 'English'} · {book.free ? '🆓 Free' : `💰 $${((book.price_cents || 0) / 100).toFixed(2)}`}
+                          {!book.free && book.stripe_price_id ? ' · ✅ Stripe OK' : !book.free ? ' · ⚠️ No Stripe' : ''}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button className="btn btn-primary btn-sm" onClick={() => setAdminEditingBook({ ...book })}>
+                          <Icons.Edit /> Edit
+                        </button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => handleAdminDeleteBook(book.id)} style={{ color: '#ef4444' }}>
+                          <Icons.Trash />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
+          </section>
+        )}
 
-            {/* ─── Subscription Management ─── */}
-            <div className="admin-card glass">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ margin: 0 }}><Icons.CreditCard /> Premium Plan (Stripe)</h3>
-                {!editingPremiumPlan ? (
-                  <button className="btn btn-ghost btn-sm" onClick={() => { setEditingPremiumPlan(true); setPremiumDraft({ ...PREMIUM_PLAN }); }}>
-                    <Icons.Edit /> Edit Plan
-                  </button>
-                ) : (
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <button className="btn btn-primary btn-sm" onClick={() => {
-                      setPREMIUM_PLAN(premiumDraft);
-                      localStorage.setItem('traxbook_premium_plan', JSON.stringify(premiumDraft));
-                      setEditingPremiumPlan(false);
-                      alert('Premium plan updated and saved!');
-                    }}>
-                      <Icons.Check /> Save
-                    </button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => { setEditingPremiumPlan(false); setPremiumDraft(null); }}>
-                      <Icons.X /> Cancel
-                    </button>
+        {/* ─── ADMIN EDIT BOOK MODAL ─── */}
+        {adminEditingBook && (
+          <div className="modal-overlay" onClick={() => setAdminEditingBook(null)}>
+            <div className="modal glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ margin: 0 }}><Icons.Edit /> Edit Book</h3>
+                <button className="btn btn-ghost btn-sm" onClick={() => setAdminEditingBook(null)}><Icons.X /></button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                {[
+                  { label: 'Title', key: 'title', full: false },
+                  { label: 'Author', key: 'author', full: false },
+                  { label: 'Language', key: 'Language', full: false },
+                ].map(field => (
+                  <div key={field.key}>
+                    <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>{field.label}</label>
+                    <input
+                      value={adminEditingBook[field.key] || ''}
+                      onChange={(e) => setAdminEditingBook(p => ({ ...p, [field.key]: e.target.value }))}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '14px' }}
+                    />
+                  </div>
+                ))}
+                <div>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Difficulty</label>
+                  <select value={adminEditingBook.difficulty || 'Beginner'} onChange={(e) => setAdminEditingBook(p => ({ ...p, difficulty: e.target.value }))} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+                    <option>Beginner</option><option>Intermediate</option><option>Advanced</option><option>Difficult</option>
+                  </select>
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>EPUB URL</label>
+                  <input value={adminEditingBook.epub_url || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, epub_url: e.target.value }))} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '12px' }} />
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Cover Image URL</label>
+                  <input value={adminEditingBook.cover_url || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, cover_url: e.target.value }))} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '12px' }} />
+                </div>
+              </div>
+
+              {/* Pricing Section */}
+              <div style={{ marginTop: '20px', padding: '16px', borderRadius: '10px', border: '1px solid var(--border)', background: 'rgba(99,102,241,0.05)' }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>💰 Pricing & Stripe</h4>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={adminEditingBook.free} onChange={(e) => setAdminEditingBook(p => ({ ...p, free: e.target.checked }))} />
+                  <span style={{ fontWeight: 500 }}>Free Book (no payment required)</span>
+                </label>
+                {!adminEditingBook.free && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Price (cents) → ${((adminEditingBook.price_cents || 0) / 100).toFixed(2)}</label>
+                      <input type="number" value={adminEditingBook.price_cents || 0} onChange={(e) => setAdminEditingBook(p => ({ ...p, price_cents: Number(e.target.value) }))} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Stripe Price ID</label>
+                      <input value={adminEditingBook.stripe_price_id || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, stripe_price_id: e.target.value }))} placeholder="price_..." style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '12px' }} />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Stripe Payment Link</label>
+                      <input value={adminEditingBook.stripe_payment_link || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, stripe_payment_link: e.target.value }))} placeholder="https://buy.stripe.com/..." style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '12px' }} />
+                    </div>
                   </div>
                 )}
               </div>
-              <div className="admin-form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-                <div className="admin-stripe-row">
-                  <label>Plan Name</label>
-                  <input value={editingPremiumPlan ? premiumDraft.name : PREMIUM_PLAN.name} readOnly={!editingPremiumPlan} onChange={(e) => setPremiumDraft(p => ({ ...p, name: e.target.value }))} />
-                </div>
-                <div className="admin-stripe-row">
-                  <label>Description</label>
-                  <input value={editingPremiumPlan ? premiumDraft.description : PREMIUM_PLAN.description} readOnly={!editingPremiumPlan} onChange={(e) => setPremiumDraft(p => ({ ...p, description: e.target.value }))} />
-                </div>
-                <div className="admin-stripe-row">
-                  <label>Price (cents)</label>
-                  <input type="number" value={editingPremiumPlan ? premiumDraft.price_cents : PREMIUM_PLAN.price_cents} readOnly={!editingPremiumPlan} onChange={(e) => setPremiumDraft(p => ({ ...p, price_cents: Number(e.target.value) }))} />
-                </div>
-                <div className="admin-stripe-row">
-                  <label>Interval</label>
-                  {editingPremiumPlan ? (
-                    <select value={premiumDraft.interval} onChange={(e) => setPremiumDraft(p => ({ ...p, interval: e.target.value }))}>
-                      <option value="month">month</option>
-                      <option value="year">year</option>
-                    </select>
-                  ) : (
-                    <input value={PREMIUM_PLAN.interval} readOnly />
-                  )}
-                </div>
-                <div className="admin-stripe-row">
-                  <label>Stripe Price ID</label>
-                  <input value={editingPremiumPlan ? premiumDraft.stripe_price_id : PREMIUM_PLAN.stripe_price_id} readOnly={!editingPremiumPlan} onChange={(e) => setPremiumDraft(p => ({ ...p, stripe_price_id: e.target.value }))} style={{ fontFamily: 'monospace', fontSize: '12px' }} />
-                </div>
-                <div className="admin-stripe-row">
-                  <label>Stripe Product ID</label>
-                  <input value={editingPremiumPlan ? premiumDraft.stripe_product_id : PREMIUM_PLAN.stripe_product_id} readOnly={!editingPremiumPlan} onChange={(e) => setPremiumDraft(p => ({ ...p, stripe_product_id: e.target.value }))} style={{ fontFamily: 'monospace', fontSize: '12px' }} />
-                </div>
-                <div className="admin-stripe-row" style={{ gridColumn: '1 / -1' }}>
-                  <label>Payment Link URL</label>
-                  <input value={editingPremiumPlan ? premiumDraft.stripe_payment_link : PREMIUM_PLAN.stripe_payment_link} readOnly={!editingPremiumPlan} onChange={(e) => setPremiumDraft(p => ({ ...p, stripe_payment_link: e.target.value }))} style={{ fontFamily: 'monospace', fontSize: '12px' }} />
-                </div>
-              </div>
-              <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(16,185,129,0.08)', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.2)' }}>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
-                  💰 Displayed price: <strong>${(PREMIUM_PLAN.price_cents / 100).toFixed(2)} / {PREMIUM_PLAN.interval}</strong><br/>
-                  🔗 Payment Link: <a href={PREMIUM_PLAN.stripe_payment_link} target="_blank" rel="noreferrer" style={{ color: '#6366f1', wordBreak: 'break-all' }}>{PREMIUM_PLAN.stripe_payment_link}</a>
-                </p>
+
+              {/* Actions */}
+              <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button className="btn btn-ghost" onClick={() => setAdminEditingBook(null)}>Cancel</button>
+                <button className="btn btn-primary" onClick={() => handleAdminUpdateBook(adminEditingBook)}>
+                  <Icons.Check /> Save Changes
+                </button>
               </div>
             </div>
-          </section>
+          </div>
         )}
 
         {/* ─── VIEW: HOME ─── */}
