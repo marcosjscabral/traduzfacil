@@ -824,36 +824,42 @@ const App = () => {
       return;
     }
 
-    // MANIFESTO: Pessoas logadas: Upload 1 arquivo / 7 days
-    if (user && !isPremium) {
-      const lastUpload = profile?.last_upload_at;
-      if (lastUpload) {
-        const lastDate = new Date(lastUpload);
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        
-        if (lastDate > sevenDaysAgo) {
-          alert('Logged-in users can only upload 1 file every 7 days. Upgrade to Premium for infinite uploads!');
-          return;
-        }
-      }
-    }
-
     setLoading(true);
 
     try {
       const arrayBuffer = await file.arrayBuffer();
       const { metadata: meta, chapters: chs } = await parseEpub(arrayBuffer);
-
       const id = btoa(unescape(encodeURIComponent(meta.title + '||' + meta.creator))).replace(/[^a-zA-Z0-9]/g, '');
+
+      // MANIFESTO: Pessoas logadas: Upload 1 arquivo / 7 days (ou mesmo ID)
+      if (user && !isPremium) {
+        const lastUpload = profile?.last_upload_at;
+        const lastUploadId = profile?.last_upload_id;
+        
+        if (lastUpload) {
+          const lastDate = new Date(lastUpload);
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          
+          if (lastDate > sevenDaysAgo && lastUploadId !== id) {
+            setLoading(false);
+            alert('Free accounts can only upload 1 new file every 7 days. You can only re-upload the same file. Upgrade to Premium for infinite uploads!');
+            return;
+          }
+        }
+      }
+
       await applyBookState(id, meta, chs);
 
-      // Update last upload date for logged users
-      if (user) {
+      // Update last upload date & ID for logged users
+      if (user && !isPremium) {
+        const timestamp = new Date().toISOString();
         await supabase
           .from('profiles')
-          .update({ last_upload_at: new Date().toISOString() })
+          .update({ last_upload_at: timestamp, last_upload_id: id })
           .eq('id', user.id);
+          
+        setProfile(prev => prev ? { ...prev, last_upload_at: timestamp, last_upload_id: id } : prev);
       }
     } catch (err) {
       console.error('Error processing EPUB:', err);
@@ -861,7 +867,7 @@ const App = () => {
     } finally {
       setLoading(false);
     }
-  }, [applyBookState, user, isPremium, profile]);
+  }, [applyBookState, user, isPremium, profile, setProfile]);
 
   /* ─── Manual Save Logic ─── */
   const chaptersRef = useRef(chapters);
