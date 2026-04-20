@@ -124,34 +124,44 @@ const MOCK_MARKETPLACE = [
     difficulty: 'Advanced',
     epub_url: 'https://raw.githubusercontent.com/IDPF/epub3-samples/master/30/dracula/dracula.epub',
     cover_url: 'https://m.media-amazon.com/images/I/71B6uEITaWL._AC_UF1000,1000_QL80_.jpg',
-    free: true
+    free: false,
+    price_cents: 500,
+    stripe_price_id: 'price_1TOIaIF0lxCQwtFqj99VXrl0',
+    Language: 'English'
   },
   {
     id: 'm2',
     title: 'Sherlock Holmes',
     author: 'Arthur Conan Doyle',
     difficulty: 'Intermediate',
-    epub_url: '',
+    epub_url: 'https://raw.githubusercontent.com/IDPF/epub3-samples/master/30/moby-dick/moby-dick.epub',
     cover_url: 'https://m.media-amazon.com/images/I/81B+GVD0tVL._AC_UF1000,1000_QL80_.jpg',
-    free: true
+    free: false,
+    price_cents: 500,
+    stripe_price_id: 'price_1TOIaIF0lxCQwtFq9YDWh6dz',
+    Language: 'English'
   },
   {
     id: 'm3',
     title: 'Alice in Wonderland',
     author: 'Lewis Carroll',
     difficulty: 'Beginner',
-    epub_url: '',
+    epub_url: 'https://raw.githubusercontent.com/IDPF/epub3-samples/master/30/alice/alice.epub',
     cover_url: 'https://m.media-amazon.com/images/I/91tZzI+2YhL._AC_UF1000,1000_QL80_.jpg',
-    free: true
+    free: true,
+    Language: 'English'
   },
   {
     id: 'm4',
     title: 'Moby Dick',
     author: 'Herman Melville',
     difficulty: 'Advanced',
-    epub_url: '',
+    epub_url: 'https://raw.githubusercontent.com/IDPF/epub3-samples/master/30/moby-dick/moby-dick.epub',
     cover_url: 'https://m.media-amazon.com/images/I/81fH+x4A1GL._AC_UF1000,1000_QL80_.jpg',
-    free: false // Premium
+    free: false,
+    price_cents: 500,
+    stripe_price_id: 'price_1TOIaIF0lxCQwtFqj99VXrl0',
+    Language: 'English'
   }
 ];
 
@@ -374,7 +384,7 @@ async function loadTranslations(bookId) {
 }
 
 /* ─────────────────── EXPORT TRANSLATIONS AS EPUB ─────────────────── */
-async function exportAsEpub(metadata, chapters) {
+async function exportAsEpub(metadata, chapters, userEmail = 'Anonymous') {
   const zip = new JSZip();
 
   // Mimetype must be uncompressed
@@ -412,6 +422,8 @@ async function exportAsEpub(metadata, chapters) {
       }
     });
 
+    // MANIFESTO: Criar assinatura no documento ao baixar
+    xhtml += `<hr/><p style="font-size: 0.8em; color: gray;">Translated by ${userEmail} via Traxbook - ${new Date().toLocaleDateString()}</p>`;
     xhtml += `</body></html>`;
     oebps.file(`chapter_${idx}.xhtml`, xhtml);
     manifestItems += `<item id="ch_${idx}" href="chapter_${idx}.xhtml" media-type="application/xhtml+xml"/>\n`;
@@ -587,10 +599,16 @@ const App = () => {
           setCatalogError(null);
           const { data, error } = await supabase.from('catalog').select('*');
           if (error) throw error;
-          if (data) setMarketplaceBooks(data);
+          if (data && data.length > 0) {
+            setMarketplaceBooks(data);
+          } else {
+            setMarketplaceBooks(MOCK_MARKETPLACE);
+          }
         } catch (e) {
-          console.error('Error fetching catalog:', e);
-          setCatalogError(e.message || JSON.stringify(e));
+          console.error('Error fetching catalog, using mock:', e);
+          setMarketplaceBooks(MOCK_MARKETPLACE);
+          // Only show error if the user is admin and might need to fix DB
+          if (isAdmin) setCatalogError(e.message || JSON.stringify(e));
         }
       };
       fetchCatalog();
@@ -766,9 +784,25 @@ const App = () => {
 
   /* ─── Handle file ─── */
   const handleFile = useCallback(async (file) => {
+    // MANIFESTO: Aceitar upload apenas de arquivos .epub
     if (!file || !file.name.toLowerCase().endsWith('.epub')) {
-      alert('Please select a valid .epub file.');
+      alert('Only .epub files are accepted.');
       return;
+    }
+
+    // MANIFESTO: Pessoas logadas: Upload 1 arquivo / 7 days
+    if (user && !isPremium) {
+      const lastUpload = profile?.last_upload_at;
+      if (lastUpload) {
+        const lastDate = new Date(lastUpload);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        if (lastDate > sevenDaysAgo) {
+          alert('Logged-in users can only upload 1 file every 7 days. Upgrade to Premium for infinite uploads!');
+          return;
+        }
+      }
     }
 
     setLoading(true);
@@ -779,13 +813,21 @@ const App = () => {
 
       const id = btoa(unescape(encodeURIComponent(meta.title + '||' + meta.creator))).replace(/[^a-zA-Z0-9]/g, '');
       await applyBookState(id, meta, chs);
+
+      // Update last upload date for logged users
+      if (user) {
+        await supabase
+          .from('profiles')
+          .update({ last_upload_at: new Date().toISOString() })
+          .eq('id', user.id);
+      }
     } catch (err) {
       console.error('Error processing EPUB:', err);
       alert('Could not load this EPUB. Make sure the file is valid.');
     } finally {
       setLoading(false);
     }
-  }, [applyBookState]);
+  }, [applyBookState, user, isPremium, profile]);
 
   /* ─── Manual Save Logic ─── */
   const chaptersRef = useRef(chapters);
@@ -974,6 +1016,9 @@ const App = () => {
   }, []);
   /* ═══════════════════ FLASHCARDS HANDLERS ═══════════════════ */
   const handleEditorMouseUp = useCallback(() => {
+    // MANIFESTO: Pessoas Premium: Create flashcard to Anki
+    if (!isPremium) return; 
+
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) return;
     if (document.activeElement?.tagName === 'TEXTAREA' || document.activeElement?.tagName === 'INPUT') return;
@@ -981,7 +1026,7 @@ const App = () => {
     if (text.length > 0) {
       setFlashcardModal({ show: true, source: text, translation: '', success: false });
     }
-  }, []);
+  }, [isPremium]);
 
   const handleSaveFlashcard = async () => {
     if (!user) {
@@ -1022,6 +1067,11 @@ const App = () => {
     if (!user) {
       alert('Sign in to download your flashcards.');
       setShowAuthModal(true);
+      return;
+    }
+    // MANIFESTO: Pessoas Premium: Create flashcard to Anki
+    if (!isPremium) {
+      setShowUpgradeModal(true);
       return;
     }
     setLoading(true);
@@ -1325,7 +1375,7 @@ const App = () => {
                 <Icons.Cloud /> Save to Cloud
               </button>
 
-              <button className="btn btn-ghost" onClick={() => exportAsEpub(metadata, chapters)} title="Export new EPUB">
+               <button className="btn btn-ghost" onClick={() => exportAsEpub(metadata, chapters, user?.email)} title="Export new EPUB">
                 <Icons.Download /> Export EPUB
               </button>
               <button className="btn btn-secondary" onClick={clearBook}>
@@ -1417,19 +1467,21 @@ const App = () => {
                   <li><Icons.Shield /> Priority support</li>
                   <li><Icons.Zap /> Early access to new features</li>
                 </ul>
-                <button
+                 <button
                   className="btn btn-primary btn-block btn-lg"
-                  data-stripe-price-id="price_REPLACE_WITH_STRIPE_PRICE_ID"
+                  data-stripe-price-id="price_1TOIa5F0lxCQwtFq9pAZKIOH"
                   onClick={() => {
+                    // MANIFESTO: Apenas pessoas logadas podem comprar plano premium
                     if (!user) {
                       setShowAuthModal(true);
                     } else {
-                      // TODO: Wire to Stripe Checkout
-                      alert('Stripe Checkout will be activated here.\nThe price ID is attached to the button as a data attribute.\nConnect stripe.redirectToCheckout({ lineItems: [{ price: "price_...", quantity: 1 }] })');
+                      // Integrated Stripe Redirect
+                      window.location.href = `https://checkout.stripe.com/pay/price_1TOIa5F0lxCQwtFq9pAZKIOH`;
+                      // Note: In production you'd use the Stripe SDK to create a session
                     }
                   }}
                 >
-                  <Icons.CreditCard /> Subscribe Now
+                  <Icons.Star /> Subscribe Now
                 </button>
               </div>
             </div>
@@ -1708,6 +1760,30 @@ const App = () => {
                 </div>
                 
                 <div className="marketplace-grid">
+                  {/* MANIFESTO: Access Combos */}
+                  {activeHomeTab === 'marketplace' && !isPremium && (
+                    <div className="mk-card combo-card" style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)', color: 'white' }}>
+                      <div className="mk-info" style={{ height: '100%', justifyContent: 'center', padding: '2rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem', background: 'rgba(255,255,255,0.2)', padding: '4px 12px', borderRadius: '20px', width: 'fit-content' }}>
+                          <Icons.Zap /> Access Combo
+                        </div>
+                        <h4 style={{ color: 'white', fontSize: '1.4rem' }}>Classical Literature Pack</h4>
+                        <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '1.5rem' }}>Dracula + Sherlock Holmes + Moby Dick</p>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>$12.00</div>
+                        <button 
+                          className="btn btn-primary" 
+                          style={{ background: 'white', color: '#4f46e5', border: 'none' }}
+                          onClick={() => {
+                            if (!user) setShowAuthModal(true);
+                            else window.location.href = `https://checkout.stripe.com/pay/price_1TOIaQF0lxCQwtFqiDtYDNU8`;
+                          }}
+                        >
+                          Buy Combo
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {catalogError ? (
                     <div style={{ gridColumn: '1 / -1', color: '#ff4d4f', padding: '1rem', background: '#ffe6e6', borderRadius: '8px' }}>
                       <strong>Error reading from Supabase:</strong> {catalogError}
@@ -1719,35 +1795,56 @@ const App = () => {
                   ) : marketplaceBooks.length === 0 ? (
                     <p style={{ textAlign: 'center', opacity: 0.6, gridColumn: '1 / -1' }}>Loading cloud catalog or no books available...</p>
                   ) : (
-                    marketplaceBooks.map(book => (
-                      <div key={book.id} className="mk-card">
-                        <div className="mk-cover" style={{ backgroundImage: `url(${book.cover_url || ''})` }}>
-                          {!book.free && (
-                            <div className="mk-premium-badge">
-                              <Icons.Lock /> Premium
-                            </div>
-                          )}
-                        </div>
-                        <div className="mk-info">
-                          <div className="mk-meta-row">
-                            <span className={`mk-diff mode-${(book.difficulty || 'beginner').trim().toLowerCase()}`}>
-                              {book.difficulty || 'Beginner'}
-                            </span>
-                            <span className="mk-language">
-                              {book.Language || 'EN'}
-                            </span>
+                    marketplaceBooks.map(book => {
+                      // MANIFESTO: Descontos em livros para Premium
+                      const displayPrice = isPremium 
+                        ? `$${((book.price_cents || 0) * 0.8 / 100).toFixed(2)}` // 20% Discount
+                        : `$${((book.price_cents || 0) / 100).toFixed(2)}`;
+                      
+                      return (
+                        <div key={book.id} className="mk-card">
+                          <div className="mk-cover" style={{ backgroundImage: `url(${book.cover_url || ''})` }}>
+                            {!book.free && !isPremium && (
+                              <div className="mk-premium-badge">
+                                <Icons.Lock /> Premium
+                              </div>
+                            )}
+                            {isPremium && !book.free && (
+                              <div className="mk-premium-badge" style={{ background: '#10b981' }}>
+                                <Icons.Zap /> Exclusive Price
+                              </div>
+                            )}
                           </div>
-                          <h4>{book.title}</h4>
-                          <p>{book.author}</p>
-                          <button 
-                            className={`btn ${book.free ? 'btn-primary' : 'btn-secondary'} mk-action-btn`}
-                            onClick={() => handleDownloadMarketplaceEpub(book)}
-                          >
-                            {book.free ? 'Start Translating' : 'Unlock'}
-                          </button>
+                          <div className="mk-info">
+                            <div className="mk-meta-row">
+                              <span className={`mk-diff mode-${(book.difficulty || 'beginner').trim().toLowerCase()}`}>
+                                {book.difficulty || 'Beginner'}
+                              </span>
+                              {!book.free && (
+                                <span className="mk-price-tag">{displayPrice}</span>
+                              )}
+                            </div>
+                            <h4>{book.title}</h4>
+                            <p>{book.author}</p>
+                            <button 
+                              className={`btn ${book.free || isPremium ? 'btn-primary' : 'btn-secondary'} mk-action-btn`}
+                              onClick={() => {
+                                if (!book.free && !isPremium && !user) {
+                                  setShowAuthModal(true);
+                                } else if (!book.free && !isPremium) {
+                                  // Buy individual book
+                                  window.location.href = `https://checkout.stripe.com/pay/${book.stripe_price_id || 'price_1TOIaIF0lxCQwtFqj99VXrl0'}`;
+                                } else {
+                                  handleDownloadMarketplaceEpub(book);
+                                }
+                              }}
+                            >
+                              {book.free || isPremium ? 'Start Translating' : 'Buy Now'}
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>
