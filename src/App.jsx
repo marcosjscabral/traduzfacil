@@ -59,6 +59,9 @@ const Icons = {
   ChevronDown: () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
   ),
+  Cloud: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+  ),
   User: () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
   ),
@@ -478,6 +481,7 @@ const App = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '', success: false });
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null, confirmText: 'Confirm' });
+  const [cloudBooks, setCloudBooks] = useState([]);
 
   /* ─── Admin State ─── */
   const [adminCatalog, setAdminCatalog] = useState([]);
@@ -486,7 +490,7 @@ const App = () => {
 
   const hasBook = chapters.length > 0;
   const isAdmin = useMemo(() => user && ADMIN_EMAILS.includes(user.email), [user]);
-  const isPremium = useMemo(() => profile?.is_premium === true, [profile]);
+  const isPremium = useMemo(() => isAdmin || profile?.is_premium === true, [profile, isAdmin]);
 
   /* ═══════════════════ AUTH EFFECTS ═══════════════════ */
 
@@ -592,6 +596,28 @@ const App = () => {
       fetchCatalog();
     }
   }, [activeHomeTab]);
+
+  /* ─── Fetch Cloud Drive Books ─── */
+  useEffect(() => {
+    if (activeHomeTab === 'library' && user && isPremium) {
+      const fetchCloudDrive = async () => {
+        try {
+          // Select only ID and title and date to save bandwidth
+          const { data, error } = await supabase
+            .from('traxbook_drive')
+            .select('id, book_title, updated_at')
+            .eq('user_id', user.id)
+            .order('updated_at', { ascending: false });
+          if (!error && data) {
+            setCloudBooks(data);
+          }
+        } catch (e) {
+          console.error('Failed to load cloud drive books:', e);
+        }
+      };
+      fetchCloudDrive();
+    }
+  }, [activeHomeTab, user, isPremium]);
 
   /* ─── Fetch Flashcards Globally ─── */
   useEffect(() => {
@@ -905,6 +931,33 @@ const App = () => {
     setCurrentChapter(idx);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
+
+  const handleOpenCloudBook = useCallback(async (id) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('traxbook_drive')
+        .select('book_data')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      if (!data || !data.book_data) throw new Error("No book data found.");
+      
+      const parsedData = typeof data.book_data === 'string' ? JSON.parse(data.book_data) : data.book_data;
+      
+      setMetadata(parsedData.metadata);
+      setChapters(parsedData.chapters);
+      setCurrentChapter(parsedData.currentChapter || 0);
+      computeProgress(parsedData.chapters);
+      setCurrentView('editor');
+    } catch (e) {
+      console.error('Failed to open cloud book:', e);
+      alert('Error fetching book from cloud: ' + e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [computeProgress]);
 
   /* ─── Delete book ─── */
   const handleDeleteBook = useCallback(async (id) => {
@@ -1582,6 +1635,48 @@ const App = () => {
                             <p className="lib-author">{book.metadata.creator}</p>
                           </div>
                           <button className="lib-delete-btn" onClick={() => handleDeleteBook(book.id)} title="Delete book and translations">
+                            <Icons.Trash />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {user && isPremium && cloudBooks.length > 0 && (
+                  <div className="library-section" style={{ marginTop: '2rem' }}>
+                    <h3 className="library-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Icons.Cloud /> Traxbook Cloud Drive
+                    </h3>
+                    <div className="library-grid">
+                      {cloudBooks.map(book => (
+                        <div key={book.id} className="lib-card" style={{ borderLeft: '4px solid #8b5cf6' }}>
+                          <div className="lib-card-info" onClick={() => handleOpenCloudBook(book.id)}>
+                            <h4 className="lib-title">{book.book_title}</h4>
+                            <p className="lib-author" style={{ fontSize: '0.8rem', opacity: 0.7 }}>
+                              Last synced: {new Date(book.updated_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <button 
+                            className="lib-delete-btn" 
+                            title="Delete from cloud" 
+                            onClick={() => {
+                              setConfirmModal({
+                                show: true,
+                                title: 'Excluir da Nuvem?',
+                                message: 'Isto removerá o livro do seu Cloud Drive permanentemente.',
+                                confirmText: 'Apagar',
+                                onConfirm: async () => {
+                                  try {
+                                    await supabase.from('traxbook_drive').delete().eq('id', book.id);
+                                    setCloudBooks(prev => prev.filter(b => b.id !== book.id));
+                                  } catch (e) {
+                                    console.error(e);
+                                  }
+                                }
+                              });
+                            }}
+                          >
                             <Icons.Trash />
                           </button>
                         </div>
