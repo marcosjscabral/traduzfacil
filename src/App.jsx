@@ -477,6 +477,7 @@ const App = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '', success: false });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null, confirmText: 'Confirm' });
 
   /* ─── Admin State ─── */
   const [adminCatalog, setAdminCatalog] = useState([]);
@@ -1059,15 +1060,22 @@ const App = () => {
     }
   }, [fetchAdminCatalog]);
 
-  const handleAdminDeleteBook = useCallback(async (id) => {
-    if (!window.confirm("Tem certeza que deseja excluir este livro do catálogo?")) return;
-    try {
-      const { error } = await supabase.from('catalog').delete().eq('id', id);
-      if (error) throw error;
-      fetchAdminCatalog();
-    } catch (e) {
-      alert('Error deleting book: ' + e.message);
-    }
+  const handleAdminDeleteBook = useCallback((id) => {
+    setConfirmModal({
+      show: true,
+      title: 'Remove Book?',
+      message: 'Are you sure you want to delete this book from the catalog?',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase.from('catalog').delete().eq('id', id);
+          if (error) throw error;
+          fetchAdminCatalog();
+        } catch (e) {
+          alert('Error deleting book: ' + e.message);
+        }
+      }
+    });
   }, [fetchAdminCatalog]);
 
   /* ─── Count total paragraphs ─── */
@@ -1120,6 +1128,41 @@ const App = () => {
               <button className="btn btn-primary btn-lg" onClick={() => { setShowUpgradeModal(false); setCurrentView('pricing'); }}>
                 <Icons.Star /> View Plans & Pricing
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* ═══ Confirm Modal ═══ */}
+      {confirmModal.show && (
+        <div className="modal-overlay" onClick={() => setConfirmModal({ ...confirmModal, show: false })}>
+          <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '360px', padding: '32px' }}>
+            <div className="auth-modal-body">
+              <div className="auth-modal-icon" style={{ background: '#fee2e2', color: '#ef4444' }}>
+                <Icons.AlertCircle />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', marginBottom: '8px' }}>{confirmModal.title}</h3>
+              <p style={{ fontSize: '0.95rem', marginBottom: '24px', opacity: 0.8 }}>{confirmModal.message}</p>
+              
+              <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ flex: 1 }}
+                  onClick={() => setConfirmModal({ ...confirmModal, show: false })}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="btn btn-primary" 
+                  style={{ flex: 1, background: '#ef4444', borderColor: '#ef4444' }}
+                  onClick={() => {
+                    if (confirmModal.onConfirm) confirmModal.onConfirm();
+                    setConfirmModal({ ...confirmModal, show: false });
+                  }}
+                >
+                  {confirmModal.confirmText}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1660,12 +1703,19 @@ const App = () => {
                             </div>
                             <div className="fc-actions">
                               <button className="btn btn-ghost btn-sm" onClick={() => setEditingCard(card)} title="Edit"><Icons.Edit /></button>
-                              <button className="btn btn-ghost btn-sm" style={{ color: '#ef4444' }} onClick={async () => {
-                                if (!window.confirm("Tem certeza que deseja excluir este flashcard?")) return;
-                                try {
-                                  await supabase.from('flashcards').delete().eq('id', card.id);
-                                  setMyFlashcards(prev => prev.filter(c => c.id !== card.id));
-                                } catch(e) {}
+                              <button className="btn btn-ghost btn-sm" style={{ color: '#ef4444' }} onClick={() => {
+                                setConfirmModal({
+                                  show: true,
+                                  title: 'Delete Card?',
+                                  message: 'Are you sure you want to remove this flashcard?',
+                                  confirmText: 'Delete',
+                                  onConfirm: async () => {
+                                    try {
+                                      await supabase.from('flashcards').delete().eq('id', card.id);
+                                      setMyFlashcards(prev => prev.filter(c => c.id !== card.id));
+                                    } catch(e) {}
+                                  }
+                                });
                               }} title="Delete"><Icons.Trash /></button>
                             </div>
                           </>
