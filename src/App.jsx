@@ -1453,9 +1453,9 @@ const App = () => {
               <div className="pricing-card pricing-card-pro">
                 <div className="pricing-popular-tag">Most Popular</div>
                 <div className="pricing-card-header">
-                  <h3><Icons.Crown /> Pro</h3>
+                  <h3><Icons.Crown /> {premiumPlan.name}</h3>
                   <div className="pricing-price">
-                    <span className="pricing-amount">$9.90</span>
+                    <span className="pricing-amount">${(premiumPlan.price_cents / 100).toFixed(2)}</span>
                     <span className="pricing-period">/month</span>
                   </div>
                 </div>
@@ -1469,15 +1469,14 @@ const App = () => {
                 </ul>
                  <button
                   className="btn btn-primary btn-block btn-lg"
-                  data-stripe-price-id="price_1TOIa5F0lxCQwtFq9pAZKIOH"
+                  data-stripe-price-id={premiumPlan.stripe_price_id}
                   onClick={() => {
                     // MANIFESTO: Apenas pessoas logadas podem comprar plano premium
                     if (!user) {
                       setShowAuthModal(true);
                     } else {
-                      // Integrated Stripe Redirect
-                      window.location.href = `https://checkout.stripe.com/pay/price_1TOIa5F0lxCQwtFq9pAZKIOH`;
-                      // Note: In production you'd use the Stripe SDK to create a session
+                      // Integrated Stripe Redirect using the dynamic ID set in Admin
+                      window.location.href = `https://checkout.stripe.com/pay/${premiumPlan.stripe_price_id}`;
                     }
                   }}
                 >
