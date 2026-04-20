@@ -951,7 +951,8 @@ const App = () => {
         alert('No flashcards found.');
         return;
       }
-      let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // Adding BOM for proper UTF-8 handling in Excel/Anki
+      // Anki specific headers for better compatibility
+      let csvContent = "#separator:Comma\n#html:true\n"; 
       data.forEach(row => {
         const src = `"${row.source_text.replace(/"/g, '""')}"`;
         const tr = `"${row.translated_text.replace(/"/g, '""')}"`;
