@@ -807,30 +807,36 @@ const App = () => {
   useEffect(() => {
     if (autoSaveInterval === 0 || status === 'Saved') return;
     const interval = setInterval(() => {
-      if (status === 'Modified') handleManualSave();
+      if (status === 'Modified') {
+        if (isPremium) {
+          handleSaveToCloud(true);
+        } else {
+          handleManualSave();
+        }
+      }
     }, autoSaveInterval * 60 * 1000);
     return () => clearInterval(interval);
-  }, [autoSaveInterval, status, handleManualSave]);
+  }, [autoSaveInterval, status, isPremium, handleSaveToCloud, handleManualSave]);
 
   /* ─── Save to Cloud (Premium-Gated) ─── */
-  const handleSaveToCloud = useCallback(async () => {
+  const handleSaveToCloud = useCallback(async (isSilent = false) => {
     if (!user) {
-      setShowAuthModal(true);
+      if (!isSilent) setShowAuthModal(true);
       return;
     }
     if (!isPremium) {
-      setShowUpgradeModal(true);
+      if (!isSilent) setShowUpgradeModal(true);
       return;
     }
 
-    if (!metadata || chapters.length === 0) return;
+    if (!metadata || chaptersRef.current.length === 0) return;
     setStatus('Saving...');
     
     try {
       const drivePayload = {
         user_id: user.id,
         book_title: metadata.title,
-        book_data: { metadata, chapters, currentChapter },
+        book_data: { metadata, chapters: chaptersRef.current, currentChapter },
         updated_at: new Date().toISOString()
       };
 
@@ -841,12 +847,7 @@ const App = () => {
         .eq('user_id', user.id)
         .eq('book_title', metadata.title);
         
-      if (searchErr) {
-          if (searchErr.code === '42P01') {
-              throw new Error("The table 'traxbook_drive' does not exist in your Supabase backend. Please create it with columns: id (uuid), user_id (uuid), book_title (text), book_data (jsonb), updated_at (timestamp).");
-          }
-          throw searchErr;
-      }
+      if (searchErr) throw searchErr;
 
       if (existing && existing.length > 0) {
         const { error: updateErr } = await supabase
@@ -862,19 +863,21 @@ const App = () => {
       }
       
       setStatus('Saved');
-      setConfirmModal({
-        show: true,
-        title: 'Traxbook Drive Synced!',
-        message: 'Your progress is safely stored in the cloud. You can sync from any device logged into this Google account.',
-        confirmText: 'OK',
-        onConfirm: () => {}
-      });
+      if (!isSilent) {
+        setConfirmModal({
+          show: true,
+          title: 'Traxbook Drive Synced!',
+          message: 'Your progress is safely stored in the cloud. You can sync from any device logged into this Google account.',
+          confirmText: 'OK',
+          onConfirm: () => {}
+        });
+      }
     } catch (e) {
       console.error('Failed to save to cloud:', e);
-      alert('Cloud Sync Error: ' + e.message);
+      if (!isSilent) alert('Cloud Sync Error: ' + e.message);
       setStatus('Modified');
     }
-  }, [metadata, chapters, currentChapter, user, isPremium]);
+  }, [metadata, currentChapter, user, isPremium]);
 
   /* ─── Translation change ─── */
   const handleTranslationChange = useCallback((chapterIdx, paraIdx, value) => {
@@ -1300,14 +1303,17 @@ const App = () => {
                 <option value={5}>Auto-save: 5 min</option>
                 <option value={10}>Auto-save: 10 min</option>
               </select>
-              <button 
-                className={`btn btn-ghost manual-save-btn ${status === 'Modified' ? 'is-modified' : ''}`} 
-                onClick={handleManualSave} 
-                disabled={status === 'Saved' || status === 'Saving...'}
-                title={status === 'Modified' ? "Save changes" : "All saved"}
-              >
-                <Icons.Save /> {status === 'Modified' ? 'Save' : status}
-              </button>
+
+              {!isPremium && (
+                <button 
+                  className={`btn btn-ghost manual-save-btn ${status === 'Modified' ? 'is-modified' : ''}`} 
+                  onClick={handleManualSave} 
+                  disabled={status === 'Saved' || status === 'Saving...'}
+                  title={status === 'Modified' ? "Save changes" : "All saved"}
+                >
+                  <Icons.Save /> {status === 'Modified' ? 'Save' : status}
+                </button>
+              )}
               <button 
                 className="btn btn-ghost" 
                 onClick={handleSaveToCloud} 
