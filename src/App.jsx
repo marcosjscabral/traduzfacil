@@ -574,7 +574,7 @@ const App = () => {
     loadAllBooks().then(setLibrary).catch(console.warn);
   }, []);
 
-  /* ─── Fetch Supabase Catalog & Flashcards ─── */
+  /* ─── Fetch Supabase Catalog ─── */
   useEffect(() => {
     if (activeHomeTab === 'marketplace') {
       const fetchCatalog = async () => {
@@ -589,21 +589,25 @@ const App = () => {
         }
       };
       fetchCatalog();
-    } else if (activeHomeTab === 'flashcards' && user) {
+    }
+  }, [activeHomeTab]);
+
+  /* ─── Fetch Flashcards Globally ─── */
+  useEffect(() => {
+    if (user) {
       const fetchCards = async () => {
-        setLoading(true);
         try {
           const { data, error } = await supabase.from('flashcards').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
           if (!error) setMyFlashcards(data || []);
         } catch (e) {
           console.error(e);
-        } finally {
-          setLoading(false);
         }
       };
       fetchCards();
+    } else {
+      setMyFlashcards([]);
     }
-  }, [activeHomeTab, user]);
+  }, [user]);
 
   /* ═══════════════════ AUTH HANDLERS ═══════════════════ */
 
@@ -664,7 +668,11 @@ const App = () => {
 
     setChapters(chs);
     computeProgress(chs);
-    setCurrentChapter(0);
+    
+    const savedChapterStr = localStorage.getItem(`traxbook_chapter_${id}`);
+    const savedChapter = savedChapterStr ? parseInt(savedChapterStr, 10) : 0;
+    setCurrentChapter(savedChapter < chs.length ? savedChapter : 0);
+    
     setCurrentView('editor');
     
     // Update Library State
@@ -672,6 +680,13 @@ const App = () => {
     const newLib = await loadAllBooks();
     setLibrary(newLib);
   }, [computeProgress]);
+
+  // Save current chapter to localStorage automatically
+  useEffect(() => {
+    if (bookId) {
+      localStorage.setItem(`traxbook_chapter_${bookId}`, currentChapter);
+    }
+  }, [bookId, currentChapter]);
 
   /* ─── Handle Open Existing Book ─── */
   const handleOpenLibraryBook = useCallback(async (book) => {
@@ -916,14 +931,17 @@ const App = () => {
     }
     setLoading(true);
     try {
-      const { error } = await supabase.from('flashcards').insert([{
+      const { error, data } = await supabase.from('flashcards').insert([{
         user_id: user.id,
         source_text: flashcardModal.source,
         translated_text: flashcardModal.translation
-      }]);
+      }]).select();
       if (error) {
          if (error.code === '42P01') throw new Error("The 'flashcards' table doesn't exist yet on Supabase. Please create it!");
          throw error;
+      }
+      if (data && data.length > 0) {
+        setMyFlashcards(prev => [data[0], ...prev]);
       }
       setFlashcardModal(p => ({ ...p, success: true }));
       setTimeout(() => {
@@ -1743,6 +1761,7 @@ const App = () => {
                     <TranslationRow
                       key={p.id}
                       paragraph={p}
+                      flashcards={myFlashcards}
                       onTranslationChange={(val) => handleTranslationChange(currentChapter, pi, val)}
                     />
                   ))}
@@ -1780,7 +1799,7 @@ const App = () => {
 };
 
 /* ─────────────────── TRANSLATION ROW (memoized) ─────────────────── */
-const TranslationRow = React.memo(({ paragraph, onTranslationChange }) => {
+const TranslationRow = React.memo(({ paragraph, flashcards, onTranslationChange }) => {
   const textareaRef = useRef(null);
   const [localVal, setLocalVal] = useState(paragraph.translation || '');
 
@@ -1808,10 +1827,37 @@ const TranslationRow = React.memo(({ paragraph, onTranslationChange }) => {
     }
   };
 
+  const renderedSource = useMemo(() => {
+    if (!flashcards || flashcards.length === 0 || !paragraph.source) return paragraph.source;
+
+    // Filter valid cards and sort by length descending to match longest phrases first
+    const sortedCards = flashcards
+      .map(c => c.source_text?.trim())
+      .filter(Boolean)
+      .sort((a, b) => b.length - a.length);
+
+    if (sortedCards.length === 0) return paragraph.source;
+
+    // Escape special characters to use them in regex safely
+    const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regexPattern = sortedCards.map(escapeRegExp).join('|');
+    const regex = new RegExp(`(${regexPattern})`, 'gi');
+
+    const parts = paragraph.source.split(regex);
+
+    return parts.map((part, index) => {
+      // Because we used capture groups, every odd index is a matched flashcard
+      if (index % 2 === 1) {
+        return <mark key={index} className="flashcard-highlight">{part}</mark>;
+      }
+      return part ? <React.Fragment key={index}>{part}</React.Fragment> : null;
+    });
+  }, [paragraph.source, flashcards]);
+
   return (
     <div className="text-pair">
       <p className={`source-text ${paragraph.isHeading ? 'heading' : ''}`}>
-        {paragraph.source}
+        {renderedSource}
       </p>
       <textarea
         ref={textareaRef}

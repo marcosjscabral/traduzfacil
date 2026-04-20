@@ -1566,6 +1566,14 @@ body {
   gap: 4px;
 }
 
+mark.flashcard-highlight {
+  background-color: #ffe066;
+  color: #1a1a1a;
+  border-radius: 3px;
+  padding: 0 2px;
+  margin: 0 1px;
+}
+
 /* ============ RESPONSIVE ============ */
 @media (max-width: 640px) {
   .app-header { height: 56px; }
