@@ -1663,7 +1663,10 @@ const App = () => {
                           <div className="lib-card-info" onClick={() => handleOpenCloudBook(book.id)}>
                             <h4 className="lib-title">{book.book_title}</h4>
                             <p className="lib-author" style={{ fontSize: '0.8rem', opacity: 0.7 }}>
-                              Last synced: {new Date(book.updated_at).toLocaleDateString()} {new Date(book.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              Last synced: {(() => {
+                                const d = new Date(book.updated_at.endsWith('Z') ? book.updated_at : book.updated_at + 'Z');
+                                return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                              })()}
                             </p>
                           </div>
                           <button 
