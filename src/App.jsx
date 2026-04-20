@@ -77,9 +77,6 @@ const Icons = {
   X: () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
   ),
-  Cloud: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
-  ),
   Star: () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
   ),
@@ -1648,7 +1645,7 @@ const App = () => {
 
                 {user && isPremium && cloudBooks.length > 0 && (
                   <div className="library-section" style={{ marginTop: '2rem' }}>
-                    <h3 className="library-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <h3 className="library-title">
                       <Icons.Cloud /> Traxbook Cloud Drive
                     </h3>
                     <div className="library-grid">
