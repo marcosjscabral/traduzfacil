@@ -5,109 +5,109 @@ import { supabase } from './supabaseClient';
 /* ─────────────────── SVG ICON COMPONENTS ─────────────────── */
 const Icons = {
   Globe: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg>
   ),
   Upload: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
   ),
   Book: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" /></svg>
   ),
   Save: () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M15.222 2H5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7.778a2 2 0 0 0-.586-1.414l-3.778-3.778a2 2 0 0 0-1.414-.586Z"/>
-      <path d="M15 2v5a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V2"/>
-      <path d="M17 22v-8a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v8"/>
+      <path d="M15.222 2H5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7.778a2 2 0 0 0-.586-1.414l-3.778-3.778a2 2 0 0 0-1.414-.586Z" />
+      <path d="M15 2v5a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V2" />
+      <path d="M17 22v-8a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v8" />
     </svg>
   ),
   Trash: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
   ),
   Check: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
   ),
   Hash: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="9" x2="20" y2="9" /><line x1="4" y1="15" x2="20" y2="15" /><line x1="10" y1="3" x2="8" y2="21" /><line x1="16" y1="3" x2="14" y2="21" /></svg>
   ),
   Shield: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
   ),
   Zap: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
   ),
   Download: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
   ),
   Library: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
   ),
   Globe2: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><circle cx="12" cy="12" r="10"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /><circle cx="12" cy="12" r="10" /></svg>
   ),
   Lock: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
   ),
   LogOut: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
   ),
   ChevronLeft: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
   ),
   ChevronRight: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
   ),
   ChevronDown: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
   ),
   AlertCircle: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
   ),
   Cloud: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /></svg>
   ),
   User: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
   ),
   Crown: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z" /><path d="M3 20h18" /></svg>
   ),
   Settings: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
   ),
   X: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
   ),
   Star: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
   ),
   Edit: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
   ),
   Plus: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
   ),
   CreditCard: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
   ),
   ArrowLeft: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
   ),
   Google: () => (
     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
     </svg>
   ),
   Smartphone: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12.01" y2="18" /></svg>
   ),
   Infinity: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z" /></svg>
   ),
   Menu: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
   ),
 };
 
@@ -262,7 +262,7 @@ async function parseEpub(arrayBuffer) {
       if (stateData.metadata && stateData.chapters) {
         return stateData;
       }
-    } catch(e) { console.warn("Failed to read project backup in the epub."); }
+    } catch (e) { console.warn("Failed to read project backup in the epub."); }
   }
 
   // 1. Find the container.xml to locate the .opf file
@@ -409,15 +409,15 @@ async function loadAllBooks() {
 async function deleteBookData(bookId) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-     const tx = db.transaction([BOOKS_STORE, STORE_NAME], 'readwrite');
-     tx.objectStore(BOOKS_STORE).delete(bookId);
-     const idx = tx.objectStore(STORE_NAME).index('bookId');
-     const req = idx.getAllKeys(bookId);
-     req.onsuccess = () => {
-       req.result.forEach(key => tx.objectStore(STORE_NAME).delete(key));
-     };
-     tx.oncomplete = resolve;
-     tx.onerror = () => reject(tx.error);
+    const tx = db.transaction([BOOKS_STORE, STORE_NAME], 'readwrite');
+    tx.objectStore(BOOKS_STORE).delete(bookId);
+    const idx = tx.objectStore(STORE_NAME).index('bookId');
+    const req = idx.getAllKeys(bookId);
+    req.onsuccess = () => {
+      req.result.forEach(key => tx.objectStore(STORE_NAME).delete(key));
+    };
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
   });
 }
 
@@ -657,7 +657,7 @@ const App = () => {
     if (stripeSuccess === 'true' && user) {
       // Clean URL
       window.history.replaceState(null, '', window.location.pathname);
-      
+
       // Re-fetch profile from Supabase since webhook may have updated is_premium
       const refreshProfile = async () => {
         // Small delay to let webhook process
@@ -814,13 +814,13 @@ const App = () => {
 
     setChapters(chs);
     computeProgress(chs);
-    
+
     const savedChapterStr = localStorage.getItem(`traxbook_chapter_${id}`);
     const savedChapter = savedChapterStr ? parseInt(savedChapterStr, 10) : 0;
     setCurrentChapter(savedChapter < chs.length ? savedChapter : 0);
-    
+
     setCurrentView('editor');
-    
+
     // Update Library State
     await saveBookData(id, meta, chs);
     const newLib = await loadAllBooks();
@@ -868,7 +868,7 @@ const App = () => {
       const res = await fetch(book.epub_url);
       if (!res.ok) throw new Error('Download failed. The file may not exist in Storage or there is a CORS error.');
       const arrayBuffer = await res.arrayBuffer();
-      
+
       const { metadata: meta, chapters: chs } = await parseEpub(arrayBuffer);
       meta.title = book.title;
       meta.cover_url = book.cover_url;
@@ -908,12 +908,12 @@ const App = () => {
       if (user && !isPremium) {
         const lastUpload = profile?.last_upload_at;
         const lastUploadId = profile?.last_upload_id;
-        
+
         if (lastUpload) {
           const lastDate = new Date(lastUpload);
           const sevenDaysAgo = new Date();
           sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-          
+
           if (lastDate > sevenDaysAgo && lastUploadId !== id) {
             setLoading(false);
             alert('Free accounts can only upload 1 new file every 7 days. You can only re-upload the same file. Upgrade to Premium for infinite uploads!');
@@ -931,7 +931,7 @@ const App = () => {
           .from('profiles')
           .update({ last_upload_at: timestamp, last_upload_id: id })
           .eq('id', user.id);
-          
+
         setProfile(prev => prev ? { ...prev, last_upload_at: timestamp, last_upload_id: id } : prev);
       }
     } catch (err) {
@@ -973,7 +973,7 @@ const App = () => {
 
     if (!metadata || chaptersRef.current.length === 0) return;
     setStatus('Saving...');
-    
+
     try {
       const drivePayload = {
         user_id: user.id,
@@ -988,7 +988,7 @@ const App = () => {
         .select('id')
         .eq('user_id', user.id)
         .eq('book_title', metadata.title);
-        
+
       if (searchErr) throw searchErr;
 
       if (existing && existing.length > 0) {
@@ -1003,7 +1003,7 @@ const App = () => {
           .insert([drivePayload]);
         if (insertErr) throw insertErr;
       }
-      
+
       setStatus('Saved');
       if (!isSilent) {
         setConfirmModal({
@@ -1011,7 +1011,7 @@ const App = () => {
           title: 'Traxbook Drive Synced!',
           message: 'Your progress is safely stored in the cloud. You can sync from any device logged into this Google account.',
           confirmText: 'OK',
-          onConfirm: () => {}
+          onConfirm: () => { }
         });
       }
     } catch (e) {
@@ -1061,7 +1061,7 @@ const App = () => {
   const onDrop = useCallback((e) => {
     e.preventDefault();
     setDragActive(false);
-    
+
     // MANIFESTO: Apenas usuários logados podem fazer upload
     if (!user) {
       setShowAuthModal(true);
@@ -1107,12 +1107,12 @@ const App = () => {
         .select('book_data')
         .eq('id', id)
         .single();
-      
+
       if (error) throw error;
       if (!data || !data.book_data) throw new Error("No book data found.");
-      
+
       const parsedData = typeof data.book_data === 'string' ? JSON.parse(data.book_data) : data.book_data;
-      
+
       setMetadata(parsedData.metadata);
       setChapters(parsedData.chapters);
       setCurrentChapter(parsedData.currentChapter || 0);
@@ -1137,7 +1137,7 @@ const App = () => {
   /* ═══════════════════ FLASHCARDS HANDLERS ═══════════════════ */
   const handleEditorMouseUp = useCallback(() => {
     // MANIFESTO: Pessoas Premium: Create flashcard to Anki
-    if (!isPremium) return; 
+    if (!isPremium) return;
 
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) return;
@@ -1167,8 +1167,8 @@ const App = () => {
         origin_id: flashcardModal.originId // New column for targeted highlighting
       }]).select();
       if (error) {
-         if (error.code === '42P01') throw new Error("The 'flashcards' table doesn't exist yet on Supabase. Please create it!");
-         throw error;
+        if (error.code === '42P01') throw new Error("The 'flashcards' table doesn't exist yet on Supabase. Please create it!");
+        throw error;
       }
       if (data && data.length > 0) {
         setMyFlashcards(prev => [data[0], ...prev]);
@@ -1203,7 +1203,7 @@ const App = () => {
         return;
       }
       // Anki specific headers for better compatibility
-      let csvContent = "#separator:Comma\n#html:true\n"; 
+      let csvContent = "#separator:Comma\n#html:true\n";
       data.forEach(row => {
         const src = `"${row.source_text.replace(/"/g, '""')}"`;
         const tr = `"${row.translated_text.replace(/"/g, '""')}"`;
@@ -1213,7 +1213,7 @@ const App = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      const fileName = metadata?.title 
+      const fileName = metadata?.title
         ? `flashcards_${metadata.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`
         : 'flashcards_anki.csv';
       link.setAttribute('download', fileName);
@@ -1249,6 +1249,22 @@ const App = () => {
   const handleAdminAddBook = useCallback(async () => {
     if (!adminNewBook.title.trim()) return alert('Title is required');
     try {
+      let stripeData = null;
+
+      // If not free and no stripe_price_id provided, create Stripe product automatically
+      if (!adminNewBook.free && !adminNewBook.stripe_price_id && adminNewBook.price_cents > 0) {
+        try {
+          alert('Creating Stripe product...');
+          stripeData = await callStripeAdmin('create_product', {
+            title: adminNewBook.title,
+            price_cents: adminNewBook.price_cents,
+          });
+          alert('✅ Stripe product created successfully!');
+        } catch (stripeError) {
+          alert('Failed to create Stripe product: ' + stripeError.message + '\n\nYou can still add the book and configure Stripe manually later.');
+        }
+      }
+
       const fullPayload = {
         title: adminNewBook.title,
         author: adminNewBook.author,
@@ -1258,12 +1274,18 @@ const App = () => {
         free: adminNewBook.free,
         premium_only: adminNewBook.premium_only || false,
         price_cents: adminNewBook.price_cents || 0,
-        stripe_price_id: adminNewBook.stripe_price_id || null,
-        stripe_payment_link: adminNewBook.stripe_payment_link || null,
+        stripe_price_id: stripeData?.stripe_price_id || adminNewBook.stripe_price_id || null,
+        stripe_payment_link: stripeData?.stripe_payment_link || adminNewBook.stripe_payment_link || null,
         Language: adminNewBook.Language || 'English',
       };
+
+      // Add stripe_product_id if available
+      if (stripeData?.stripe_product_id) {
+        fullPayload.stripe_product_id = stripeData.stripe_product_id;
+      }
+
       let { error } = await supabase.from('catalog').insert([fullPayload]);
-      
+
       if (error) {
         // Retry without stripe fields
         console.warn('Full insert failed, retrying without stripe fields:', error.message);
@@ -1279,7 +1301,7 @@ const App = () => {
         const { error: err2 } = await supabase.from('catalog').insert([basicPayload]);
         if (err2) throw err2;
       }
-      
+
       setAdminNewBook({ title: '', author: '', difficulty: 'Beginner', epub_url: '', cover_url: '', free: true, premium_only: false, price_cents: 0, stripe_price_id: '', stripe_payment_link: '', Language: 'English' });
       fetchAdminCatalog();
       alert('✅ Book added to catalog!');
@@ -1302,10 +1324,11 @@ const App = () => {
         price_cents: book.price_cents || 0,
         stripe_price_id: book.stripe_price_id || null,
         stripe_payment_link: book.stripe_payment_link || null,
+        stripe_product_id: book.stripe_product_id || null,
         Language: book.Language || 'English',
       };
       const { error } = await supabase.from('catalog').update(fullPayload).eq('id', book.id);
-      
+
       if (error) {
         // If it fails (missing columns), try without stripe fields
         console.warn('Full update failed, retrying without stripe fields:', error.message);
@@ -1319,12 +1342,12 @@ const App = () => {
           Language: book.Language || 'English',
         };
         // Try adding price_cents separately
-        try { basicPayload.price_cents = book.price_cents || 0; } catch(e) {}
-        
+        try { basicPayload.price_cents = book.price_cents || 0; } catch (e) { }
+
         const { error: err2 } = await supabase.from('catalog').update(basicPayload).eq('id', book.id);
         if (err2) throw err2;
       }
-      
+
       setAdminEditingBook(null);
       fetchAdminCatalog();
       alert('✅ Book updated!');
@@ -1405,7 +1428,7 @@ const App = () => {
           </div>
         </div>
       )}
-      
+
       {/* ═══ Confirm Modal ═══ */}
       {confirmModal.show && (
         <div className="modal-overlay" onClick={() => setConfirmModal({ ...confirmModal, show: false })}>
@@ -1416,17 +1439,17 @@ const App = () => {
               </div>
               <h3 style={{ fontSize: '1.25rem', marginBottom: '8px' }}>{confirmModal.title}</h3>
               <p style={{ fontSize: '0.95rem', marginBottom: '24px', opacity: 0.8 }}>{confirmModal.message}</p>
-              
+
               <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
-                <button 
-                  className="btn btn-secondary" 
+                <button
+                  className="btn btn-secondary"
                   style={{ flex: 1 }}
                   onClick={() => setConfirmModal({ ...confirmModal, show: false })}
                 >
                   Cancel
                 </button>
-                <button 
-                  className="btn btn-primary" 
+                <button
+                  className="btn btn-primary"
                   style={{ flex: 1, background: '#ef4444', borderColor: '#ef4444' }}
                   onClick={() => {
                     if (confirmModal.onConfirm) confirmModal.onConfirm();
@@ -1458,7 +1481,7 @@ const App = () => {
                 <>
                   <div style={{ width: '100%', marginBottom: '1rem' }}>
                     <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Source text</label>
-                    <textarea 
+                    <textarea
                       value={flashcardModal.source}
                       readOnly
                       className="translation-input"
@@ -1467,7 +1490,7 @@ const App = () => {
                   </div>
                   <div style={{ width: '100%', marginBottom: '1.5rem' }}>
                     <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Translation</label>
-                    <textarea 
+                    <textarea
                       value={flashcardModal.translation}
                       onChange={(e) => setFlashcardModal(p => ({ ...p, translation: e.target.value }))}
                       placeholder="Enter translation for the selected text..."
@@ -1497,7 +1520,7 @@ const App = () => {
           <Icons.Globe />
           <h1 className="gradient-text">Traxbook<span></span></h1>
         </div>
-        
+
         <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
           {mobileMenuOpen ? <Icons.X /> : <Icons.Menu />}
         </button>
@@ -1505,8 +1528,8 @@ const App = () => {
         <div className={`header-actions ${mobileMenuOpen ? 'is-open' : ''}`}>
           {currentView === 'editor' && hasBook && (
             <>
-              <select 
-                value={autoSaveInterval} 
+              <select
+                value={autoSaveInterval}
                 onChange={(e) => setAutoSaveInterval(Number(e.target.value))}
                 className="auto-save-select"
                 title="Auto-save interval"
@@ -1519,25 +1542,25 @@ const App = () => {
               </select>
 
               {!isPremium && (
-                <button 
-                  className={`btn btn-ghost manual-save-btn ${status === 'Modified' ? 'is-modified' : ''}`} 
-                  onClick={handleManualSave} 
+                <button
+                  className={`btn btn-ghost manual-save-btn ${status === 'Modified' ? 'is-modified' : ''}`}
+                  onClick={handleManualSave}
                   disabled={status === 'Saved' || status === 'Saving...'}
                   title={status === 'Modified' ? "Save changes" : "All saved"}
                 >
                   <Icons.Save /> {status === 'Modified' ? 'Save' : status}
                 </button>
               )}
-              <button 
-                className="btn btn-ghost" 
-                onClick={() => handleSaveToCloud()} 
+              <button
+                className="btn btn-ghost"
+                onClick={() => handleSaveToCloud()}
                 disabled={status === 'Saving...'}
                 title="Save your translation progress to the cloud"
               >
                 <Icons.Cloud /> Save to Cloud
               </button>
 
-               <button className="btn btn-ghost" onClick={() => exportAsEpub(metadata, chapters, user?.email)} title="Export new EPUB">
+              <button className="btn btn-ghost" onClick={() => exportAsEpub(metadata, chapters, user?.email)} title="Export new EPUB">
                 <Icons.Download /> Export EPUB
               </button>
               <button className="btn btn-secondary" onClick={clearBook}>
@@ -1629,7 +1652,7 @@ const App = () => {
                   <li><Icons.Shield /> Priority support</li>
                   <li><Icons.Zap /> Early access to new features</li>
                 </ul>
-                 <button
+                <button
                   className="btn btn-primary btn-block btn-lg"
                   data-stripe-price-id={PREMIUM_PLAN.stripe_price_id}
                   style={{ transition: 'all 0.2s ease' }}
@@ -1844,84 +1867,83 @@ const App = () => {
                       <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Stripe Payment Link</label>
                       <input value={adminEditingBook.stripe_payment_link || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, stripe_payment_link: e.target.value }))} placeholder="https://buy.stripe.com/..." style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '12px' }} />
                     </div>
-                    
-                    {/* ─── Stripe API Buttons ─── */}
+
+                    {/* ─── Stripe Help ─── */}
                     <div style={{ gridColumn: '1 / -1', marginTop: '8px', padding: '12px', borderRadius: '8px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
                       {!adminEditingBook.stripe_price_id ? (
                         <div>
                           <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>
-                            ⚡ No Stripe product yet. Create one automatically:
+                            ⚠️ <strong>No Stripe product configured.</strong> To enable purchases:
                           </p>
-                          <button
-                            className="btn btn-primary btn-sm"
-                            id="stripe-create-btn"
-                            onClick={async (e) => {
-                              const btn = e.currentTarget;
-                              if (!adminEditingBook.price_cents || adminEditingBook.price_cents <= 0) {
-                                return alert('Set a price first (in cents, e.g. 199 = $1.99)');
-                              }
-                              btn.disabled = true;
-                              btn.textContent = '⏳ Creating on Stripe...';
-                              try {
-                                const result = await callStripeAdmin('create_product', {
-                                  title: adminEditingBook.title,
-                                  price_cents: adminEditingBook.price_cents,
-                                  currency: 'usd',
-                                });
-                                setAdminEditingBook(p => ({
-                                  ...p,
-                                  stripe_price_id: result.stripe_price_id,
-                                  stripe_payment_link: result.stripe_payment_link,
-                                }));
-                                alert(`✅ Created on Stripe!\nProduct: ${result.stripe_product_id}\nPrice: ${result.stripe_price_id}`);
-                              } catch (err) {
-                                alert('❌ Error: ' + err.message);
-                              } finally {
-                                btn.disabled = false;
-                                btn.textContent = '⚡ Create Product on Stripe';
-                              }
-                            }}
-                          >
-                            ⚡ Create Product on Stripe
-                          </button>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={async () => {
+                                if (!adminEditingBook.price_cents || adminEditingBook.price_cents <= 0) {
+                                  alert('Please set a price first.');
+                                  return;
+                                }
+                                try {
+                                  const stripeData = await callStripeAdmin('create_product', {
+                                    title: adminEditingBook.title,
+                                    price_cents: adminEditingBook.price_cents,
+                                  });
+                                  setAdminEditingBook(prev => ({
+                                    ...prev,
+                                    stripe_price_id: stripeData.stripe_price_id,
+                                    stripe_payment_link: stripeData.stripe_payment_link,
+                                  }));
+                                  alert('✅ Stripe product created successfully!');
+                                } catch (error) {
+                                  alert('Failed to create Stripe product: ' + error.message);
+                                }
+                              }}
+                              style={{ fontSize: '12px', padding: '6px 12px' }}
+                            >
+                              ⚡ Create Stripe Product
+                            </button>
+                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>or</span>
+                            <a href="https://dashboard.stripe.com/products/create" target="_blank" rel="noreferrer"
+                              style={{ display: 'inline-block', padding: '6px 16px', borderRadius: '6px', background: '#6b7280', color: 'white', textDecoration: 'none', fontSize: '12px', fontWeight: 500 }}>
+                              Manual Setup
+                            </a>
+                          </div>
+                          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0' }}>
+                            <strong>Auto-create:</strong> Creates product, price, and payment link automatically.<br />
+                            <strong>Manual:</strong> Go to Stripe Dashboard to create manually.
+                          </p>
                         </div>
                       ) : (
                         <div>
-                          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>
-                            ✅ Stripe configured. Change the price above and click Update to sync:
+                          <p style={{ fontSize: '12px', color: '#10b981', margin: '0 0 8px 0' }}>
+                            ✅ Stripe configured! Price ID: <code>{adminEditingBook.stripe_price_id}</code>
                           </p>
                           <button
-                            className="btn btn-secondary btn-sm"
-                            id="stripe-update-btn"
-                            onClick={async (e) => {
-                              const btn = e.currentTarget;
+                            className="btn btn-ghost btn-sm"
+                            onClick={async () => {
                               if (!adminEditingBook.price_cents || adminEditingBook.price_cents <= 0) {
-                                return alert('Set a valid price first');
+                                alert('Please set a price first.');
+                                return;
                               }
-                              btn.disabled = true;
-                              btn.textContent = '⏳ Updating price on Stripe...';
                               try {
-                                const result = await callStripeAdmin('update_price', {
-                                  stripe_product_id: adminEditingBook.stripe_product_id || null,
+                                const stripeData = await callStripeAdmin('update_price', {
+                                  stripe_product_id: adminEditingBook.stripe_product_id || adminEditingBook.stripe_price_id?.replace('price_', 'prod_'), // fallback
                                   stripe_price_id_old: adminEditingBook.stripe_price_id,
                                   price_cents: adminEditingBook.price_cents,
-                                  currency: 'usd',
                                 });
-                                setAdminEditingBook(p => ({
-                                  ...p,
-                                  stripe_price_id: result.stripe_price_id,
-                                  stripe_payment_link: result.stripe_payment_link,
+                                setAdminEditingBook(prev => ({
+                                  ...prev,
+                                  stripe_price_id: stripeData.stripe_price_id,
+                                  stripe_payment_link: stripeData.stripe_payment_link,
                                 }));
-                                alert(`✅ Price updated on Stripe!\nNew Price ID: ${result.stripe_price_id}`);
-                              } catch (err) {
-                                alert('❌ Error: ' + err.message);
-                              } finally {
-                                btn.disabled = false;
-                                btn.textContent = '🔄 Update Price on Stripe';
+                                alert('✅ Stripe price updated successfully!');
+                              } catch (error) {
+                                alert('Failed to update Stripe price: ' + error.message);
                               }
                             }}
+                            style={{ fontSize: '12px', padding: '4px 8px' }}
                           >
-                            🔄 Update Price on Stripe
+                            🔄 Update Price
                           </button>
                         </div>
                       )}
@@ -1950,27 +1972,27 @@ const App = () => {
             </h2>
             <p>
               Load your EPUB file and start translating instantly.
-              {isPremium 
+              {isPremium
                 ? "All your progress is securely saved in the cloud (Traxbook Drive)."
                 : "All your progress is saved offline in your browser."}
             </p>
 
             {/* ─── Tabs Navigation ─── */}
             <div className="home-tabs">
-              <button 
+              <button
                 className={`home-tab ${activeHomeTab === 'library' ? 'active' : ''}`}
                 onClick={() => setActiveHomeTab('library')}
               >
                 <Icons.Library /> My Library and Uploads
               </button>
-              <button 
+              <button
                 className={`home-tab ${activeHomeTab === 'marketplace' ? 'active' : ''}`}
                 onClick={() => setActiveHomeTab('marketplace')}
               >
                 <Icons.Globe2 /> Public Library (Explore)
               </button>
               {user && (
-                <button 
+                <button
                   className={`home-tab ${activeHomeTab === 'flashcards' ? 'active' : ''}`}
                   onClick={() => setActiveHomeTab('flashcards')}
                 >
@@ -2046,9 +2068,9 @@ const App = () => {
                               })()}
                             </p>
                           </div>
-                          <button 
-                            className="lib-delete-btn" 
-                            title="Delete from cloud" 
+                          <button
+                            className="lib-delete-btn"
+                            title="Delete from cloud"
                             onClick={() => {
                               setConfirmModal({
                                 show: true,
@@ -2083,7 +2105,7 @@ const App = () => {
                   <h3>Discover Classics</h3>
                   <p>Start your translation journey right now without downloading anything.</p>
                 </div>
-                
+
                 <div className="marketplace-grid">
                   {/* MANIFESTO: Access Combos */}
                   {activeHomeTab === 'marketplace' && !isPremium && (
@@ -2095,8 +2117,8 @@ const App = () => {
                         <h4 style={{ color: 'white', fontSize: '1.4rem' }}>Classical Literature Pack</h4>
                         <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '1.5rem' }}>Dracula + Sherlock Holmes + Moby Dick</p>
                         <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>$12.00</div>
-                        <button 
-                          className="btn btn-primary" 
+                        <button
+                          className="btn btn-primary"
                           style={{ background: 'white', color: '#4f46e5', border: 'none', transition: 'all 0.2s ease' }}
                           onClick={(e) => {
                             const btn = e.currentTarget;
@@ -2122,7 +2144,7 @@ const App = () => {
                     <div style={{ gridColumn: '1 / -1', color: '#ff4d4f', padding: '1rem', background: '#ffe6e6', borderRadius: '8px' }}>
                       <strong>Error reading from Supabase:</strong> {catalogError}
                       <p style={{ marginTop: '10px', fontSize: '0.9em' }}>
-                        Tip: Go to the Supabase SQL Editor and run the command: <br/>
+                        Tip: Go to the Supabase SQL Editor and run the command: <br />
                         <code>ALTER TABLE catalog DISABLE ROW LEVEL SECURITY;</code>
                       </p>
                     </div>
@@ -2131,10 +2153,10 @@ const App = () => {
                   ) : (
                     marketplaceBooks.map(book => {
                       // MANIFESTO: Descontos em livros para Premium
-                      const displayPrice = isPremium 
+                      const displayPrice = isPremium
                         ? `$${((book.price_cents || 0) * 0.8 / 100).toFixed(2)}` // 20% Discount
                         : `$${((book.price_cents || 0) / 100).toFixed(2)}`;
-                      
+
                       return (
                         <div key={book.id} className="mk-card">
                           <div className="mk-cover" style={{ backgroundImage: `url(${book.cover_url || ''})` }}>
@@ -2155,7 +2177,7 @@ const App = () => {
                             </div>
                             <h4>{book.title}</h4>
                             <p>{book.author}</p>
-                            <button 
+                            <button
                               className={`btn ${book.free || isPremium || (!book.premium_only && !book.free) ? (book.premium_only && !isPremium ? 'btn-secondary' : 'btn-primary') : 'btn-secondary'} mk-action-btn`}
                               style={{ transition: 'all 0.2s ease' }}
                               onClick={(e) => {
@@ -2222,17 +2244,17 @@ const App = () => {
                         {editingCard?.id === card.id ? (
                           <div className="fc-editor">
                             <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Source</label>
-                            <input 
+                            <input
                               className="translation-input"
-                              value={editingCard.source_text} 
-                              onChange={e => setEditingCard({...editingCard, source_text: e.target.value})} 
+                              value={editingCard.source_text}
+                              onChange={e => setEditingCard({ ...editingCard, source_text: e.target.value })}
                               style={{ marginBottom: '0.5rem', background: 'rgba(0,0,0,0.1)' }}
                             />
                             <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Translation</label>
-                            <input 
+                            <input
                               className="translation-input"
-                              value={editingCard.translated_text} 
-                              onChange={e => setEditingCard({...editingCard, translated_text: e.target.value})} 
+                              value={editingCard.translated_text}
+                              onChange={e => setEditingCard({ ...editingCard, translated_text: e.target.value })}
                               style={{ marginBottom: '1rem' }}
                             />
                             <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -2240,7 +2262,7 @@ const App = () => {
                               <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={async () => {
                                 try {
                                   if (!editingCard.source_text.trim() || !editingCard.translated_text.trim()) return;
-                                  const {error} = await supabase.from('flashcards').update({ source_text: editingCard.source_text, translated_text: editingCard.translated_text }).eq('id', editingCard.id);
+                                  const { error } = await supabase.from('flashcards').update({ source_text: editingCard.source_text, translated_text: editingCard.translated_text }).eq('id', editingCard.id);
                                   if (error) throw error;
                                   setMyFlashcards(prev => prev.map(c => c.id === editingCard.id ? { ...c, source_text: editingCard.source_text, translated_text: editingCard.translated_text } : c));
                                   setEditingCard(null);
@@ -2270,7 +2292,7 @@ const App = () => {
                                       const { error } = await supabase.from('flashcards').delete().eq('id', card.id);
                                       if (error) throw error;
                                       setMyFlashcards(prev => prev.filter(c => c.id !== card.id));
-                                    } catch(e) {
+                                    } catch (e) {
                                       console.error("Delete error:", e);
                                       alert("Error deleting from cloud: " + e.message);
                                     }
@@ -2302,14 +2324,14 @@ const App = () => {
             {/* Book Card */}
             <div className="book-card glass">
               {metadata?.cover_url ? (
-                <div 
-                  className="book-cover-placeholder" 
-                  style={{ 
-                    backgroundImage: `url(${metadata.cover_url})`, 
-                    backgroundSize: 'cover', 
+                <div
+                  className="book-cover-placeholder"
+                  style={{
+                    backgroundImage: `url(${metadata.cover_url})`,
+                    backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     border: 'none'
-                  }} 
+                  }}
                 />
               ) : (
                 <div className="book-cover-placeholder">
@@ -2471,7 +2493,7 @@ const TranslationRow = React.memo(({ paragraph, flashcards, onTranslationChange,
     // Filter cards: Only highlight if they originated in this paragraph
     // or if they don't have an origin_id (old cards)
     const validCards = flashcards.filter(c => !c.origin_id || c.origin_id === paragraph.id);
-    
+
     if (validCards.length === 0) return paragraph.source;
 
     const phrases = validCards
