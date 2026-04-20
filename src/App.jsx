@@ -1354,6 +1354,7 @@ const App = () => {
                   <option value="Beginner">Beginner</option>
                   <option value="Intermediate">Intermediate</option>
                   <option value="Advanced">Advanced</option>
+                  <option value="Difficult">Difficult</option>
                 </select>
                 <input placeholder="Language" value={adminNewBook.Language} onChange={(e) => setAdminNewBook(p => ({ ...p, Language: e.target.value }))} />
                 <label className="admin-checkbox">
@@ -1399,7 +1400,7 @@ const App = () => {
                               <td><input value={adminEditingBook.author || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, author: e.target.value }))} /></td>
                               <td>
                                 <select value={adminEditingBook.difficulty || 'Beginner'} onChange={(e) => setAdminEditingBook(p => ({ ...p, difficulty: e.target.value }))}>
-                                  <option>Beginner</option><option>Intermediate</option><option>Advanced</option>
+                                  <option>Beginner</option><option>Intermediate</option><option>Advanced</option><option>Difficult</option>
                                 </select>
                               </td>
                               <td><input value={adminEditingBook.Language || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, Language: e.target.value }))} /></td>
