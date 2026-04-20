@@ -725,6 +725,7 @@ const App = () => {
       
       const { metadata: meta, chapters: chs } = await parseEpub(arrayBuffer);
       meta.title = book.title;
+      meta.cover_url = book.cover_url;
 
       const id = btoa(unescape(encodeURIComponent(meta.title + '||' + meta.creator))).replace(/[^a-zA-Z0-9]/g, '');
       await applyBookState(id, meta, chs);
@@ -1686,9 +1687,21 @@ const App = () => {
           <section className="editor-section" onMouseUp={handleEditorMouseUp}>
             {/* Book Card */}
             <div className="book-card glass">
-              <div className="book-cover-placeholder">
-                <Icons.Book />
-              </div>
+              {metadata?.cover_url ? (
+                <div 
+                  className="book-cover-placeholder" 
+                  style={{ 
+                    backgroundImage: `url(${metadata.cover_url})`, 
+                    backgroundSize: 'cover', 
+                    backgroundPosition: 'center',
+                    border: 'none'
+                  }} 
+                />
+              ) : (
+                <div className="book-cover-placeholder">
+                  <Icons.Book />
+                </div>
+              )}
               <div className="book-info">
                 <h3>{metadata?.title}</h3>
                 <p className="author">by {metadata?.creator || 'Unknown Author'}</p>
