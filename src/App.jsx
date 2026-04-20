@@ -481,7 +481,7 @@ const App = () => {
   /* ─── Admin State ─── */
   const [adminCatalog, setAdminCatalog] = useState([]);
   const [adminEditingBook, setAdminEditingBook] = useState(null);
-  const [adminNewBook, setAdminNewBook] = useState({ title: '', author: '', difficulty: 'Beginner', epub_url: '', cover_url: '', free: true, price_cents: 0, stripe_price_id: '', language: 'English' });
+  const [adminNewBook, setAdminNewBook] = useState({ title: '', author: '', difficulty: 'Beginner', epub_url: '', cover_url: '', free: true, price_cents: 0, stripe_price_id: '', Language: 'English' });
 
   const hasBook = chapters.length > 0;
   const isAdmin = useMemo(() => user && ADMIN_EMAILS.includes(user.email), [user]);
@@ -1026,10 +1026,10 @@ const App = () => {
         free: adminNewBook.free,
         price_cents: adminNewBook.price_cents || 0,
         stripe_price_id: adminNewBook.stripe_price_id || null,
-        language: adminNewBook.language || 'English',
+        Language: adminNewBook.Language || 'English',
       }]);
       if (error) throw error;
-      setAdminNewBook({ title: '', author: '', difficulty: 'Beginner', epub_url: '', cover_url: '', free: true, price_cents: 0, stripe_price_id: '', language: 'English' });
+      setAdminNewBook({ title: '', author: '', difficulty: 'Beginner', epub_url: '', cover_url: '', free: true, price_cents: 0, stripe_price_id: '', Language: 'English' });
       fetchAdminCatalog();
       alert('Book added to catalog!');
     } catch (e) {
@@ -1048,7 +1048,7 @@ const App = () => {
         free: book.free,
         price_cents: book.price_cents || 0,
         stripe_price_id: book.stripe_price_id || null,
-        language: book.language || 'English',
+        Language: book.Language || 'English',
       }).eq('id', book.id);
       if (error) throw error;
       setAdminEditingBook(null);
@@ -1355,7 +1355,7 @@ const App = () => {
                   <option value="Intermediate">Intermediate</option>
                   <option value="Advanced">Advanced</option>
                 </select>
-                <input placeholder="Language" value={adminNewBook.language} onChange={(e) => setAdminNewBook(p => ({ ...p, language: e.target.value }))} />
+                <input placeholder="Language" value={adminNewBook.Language} onChange={(e) => setAdminNewBook(p => ({ ...p, Language: e.target.value }))} />
                 <label className="admin-checkbox">
                   <input type="checkbox" checked={adminNewBook.free} onChange={(e) => setAdminNewBook(p => ({ ...p, free: e.target.checked }))} /> Free
                 </label>
@@ -1402,7 +1402,7 @@ const App = () => {
                                   <option>Beginner</option><option>Intermediate</option><option>Advanced</option>
                                 </select>
                               </td>
-                              <td><input value={adminEditingBook.language || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, language: e.target.value }))} /></td>
+                              <td><input value={adminEditingBook.Language || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, Language: e.target.value }))} /></td>
                               <td>
                                 <input type="checkbox" checked={adminEditingBook.free} onChange={(e) => setAdminEditingBook(p => ({ ...p, free: e.target.checked }))} />
                               </td>
@@ -1417,7 +1417,7 @@ const App = () => {
                               <td>{book.title}</td>
                               <td>{book.author}</td>
                               <td><span className={`mk-diff mode-${(book.difficulty || 'beginner').toLowerCase()}`}>{book.difficulty || 'Beginner'}</span></td>
-                              <td>{book.language || '—'}</td>
+                              <td>{book.Language || '—'}</td>
                               <td>{book.free ? '✓ Free' : '💎 Paid'}</td>
                               <td>{book.free ? '—' : `$${((book.price_cents || 0) / 100).toFixed(2)}`}</td>
                               <td className="admin-actions">
@@ -1581,7 +1581,7 @@ const App = () => {
                               {book.difficulty || 'Beginner'}
                             </span>
                             <span className="mk-language">
-                              {book.language || 'EN'}
+                              {book.Language || 'EN'}
                             </span>
                           </div>
                           <h4>{book.title}</h4>
