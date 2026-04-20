@@ -479,7 +479,7 @@ const App = () => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '', success: false });
+  const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '', success: false, originId: null });
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null, confirmText: 'Confirm' });
   const [cloudBooks, setCloudBooks] = useState([]);
 
@@ -988,12 +988,13 @@ const App = () => {
       alert('Please enter a translation.');
       return;
     }
-    setLoading(true);
+    // setLoading(true); // Removed to prevent whole-app unmount & scroll reset
     try {
       const { error, data } = await supabase.from('flashcards').insert([{
         user_id: user.id,
         source_text: flashcardModal.source,
-        translated_text: flashcardModal.translation
+        translated_text: flashcardModal.translation,
+        origin_id: flashcardModal.originId // New column for targeted highlighting
       }]).select();
       if (error) {
          if (error.code === '42P01') throw new Error("The 'flashcards' table doesn't exist yet on Supabase. Please create it!");
@@ -1004,13 +1005,11 @@ const App = () => {
       }
       setFlashcardModal(p => ({ ...p, success: true }));
       setTimeout(() => {
-        setFlashcardModal({ show: false, source: '', translation: '', success: false });
+        setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null });
         window.getSelection()?.removeAllRanges();
       }, 1500);
     } catch (err) {
       alert('Error saving flashcard: ' + err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -1810,9 +1809,13 @@ const App = () => {
                                   confirmText: 'Delete',
                                   onConfirm: async () => {
                                     try {
-                                      await supabase.from('flashcards').delete().eq('id', card.id);
+                                      const { error } = await supabase.from('flashcards').delete().eq('id', card.id);
+                                      if (error) throw error;
                                       setMyFlashcards(prev => prev.filter(c => c.id !== card.id));
-                                    } catch(e) {}
+                                    } catch(e) {
+                                      console.error("Delete error:", e);
+                                      alert("Error deleting from cloud: " + e.message);
+                                    }
                                   }
                                 });
                               }} title="Delete"><Icons.Trash /></button>
@@ -1837,7 +1840,7 @@ const App = () => {
 
         {/* ─── VIEW: EDITOR ─── */}
         {currentView === 'editor' && hasBook && (
-          <section className="editor-section" onMouseUp={handleEditorMouseUp}>
+          <section className="editor-section">
             {/* Book Card */}
             <div className="book-card glass">
               {metadata?.cover_url ? (
@@ -1929,6 +1932,7 @@ const App = () => {
                       paragraph={p}
                       flashcards={myFlashcards}
                       onTranslationChange={(val) => handleTranslationChange(currentChapter, pi, val)}
+                      onSelect={(text) => setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: p.id })}
                     />
                   ))}
                 </React.Fragment>
@@ -1965,7 +1969,7 @@ const App = () => {
 };
 
 /* ─────────────────── TRANSLATION ROW (memoized) ─────────────────── */
-const TranslationRow = React.memo(({ paragraph, flashcards, onTranslationChange }) => {
+const TranslationRow = React.memo(({ paragraph, flashcards, onTranslationChange, onSelect }) => {
   const textareaRef = useRef(null);
   const [localVal, setLocalVal] = useState(paragraph.translation || '');
 
@@ -1993,20 +1997,35 @@ const TranslationRow = React.memo(({ paragraph, flashcards, onTranslationChange 
     }
   };
 
+  const handleMouseUp = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+    if (document.activeElement?.tagName === 'TEXTAREA' || document.activeElement?.tagName === 'INPUT') return;
+    const text = selection.toString().trim();
+    if (text.length > 0) {
+      onSelect(text);
+    }
+  };
+
   const renderedSource = useMemo(() => {
     if (!flashcards || flashcards.length === 0 || !paragraph.source) return paragraph.source;
 
-    // Filter valid cards and sort by length descending to match longest phrases first
-    const sortedCards = flashcards
+    // Filter cards: Only highlight if they originated in this paragraph
+    // or if they don't have an origin_id (old cards)
+    const validCards = flashcards.filter(c => !c.origin_id || c.origin_id === paragraph.id);
+    
+    if (validCards.length === 0) return paragraph.source;
+
+    const phrases = validCards
       .map(c => c.source_text?.trim())
       .filter(Boolean)
       .sort((a, b) => b.length - a.length);
 
-    if (sortedCards.length === 0) return paragraph.source;
+    if (phrases.length === 0) return paragraph.source;
 
-    // Escape special characters to use them in regex safely
+    // Escape special characters
     const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regexPattern = sortedCards.map(escapeRegExp).join('|');
+    const regexPattern = phrases.map(escapeRegExp).join('|');
     const regex = new RegExp(`(${regexPattern})`, 'gi');
 
     const parts = paragraph.source.split(regex);
@@ -2022,7 +2041,7 @@ const TranslationRow = React.memo(({ paragraph, flashcards, onTranslationChange 
 
   return (
     <div className="text-pair">
-      <p className={`source-text ${paragraph.isHeading ? 'heading' : ''}`}>
+      <p className={`source-text ${paragraph.isHeading ? 'heading' : ''}`} onMouseUp={handleMouseUp}>
         {renderedSource}
       </p>
       <textarea
