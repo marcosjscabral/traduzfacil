@@ -116,7 +116,7 @@ const Icons = {
 const ADMIN_EMAILS = ['marcosjscabral@gmail.com'];
 
 /* ─────────────────── STRIPE PRICING CONFIG ─────────────────── */
-const PREMIUM_PLAN = {
+const DEFAULT_PREMIUM_PLAN = {
   name: 'Traxbook Premium',
   description: 'Infinite upload, Cloud Sync, Anki Flashcards, Multi-device sync, and Exclusive Discounts.',
   price_cents: 1990,
@@ -126,6 +126,15 @@ const PREMIUM_PLAN = {
   stripe_product_id: 'prod_UN2fqt7rN7Qmzz',
   stripe_payment_link: 'https://buy.stripe.com/4gM7sLd9Y1iObeg35wcwg00',
 };
+
+// Load saved premium plan from localStorage or use default
+function loadPremiumPlan() {
+  try {
+    const saved = localStorage.getItem('traxbook_premium_plan');
+    if (saved) return { ...DEFAULT_PREMIUM_PLAN, ...JSON.parse(saved) };
+  } catch (e) { /* ignore */ }
+  return DEFAULT_PREMIUM_PLAN;
+}
 
 // Centralized map: stripe_price_id → Payment Link URL
 const STRIPE_PAYMENT_LINKS = {
@@ -531,6 +540,9 @@ const App = () => {
   const [adminCatalog, setAdminCatalog] = useState([]);
   const [adminEditingBook, setAdminEditingBook] = useState(null);
   const [adminNewBook, setAdminNewBook] = useState({ title: '', author: '', difficulty: 'Beginner', epub_url: '', cover_url: '', free: true, price_cents: 0, stripe_price_id: '', stripe_payment_link: '', Language: 'English' });
+  const [PREMIUM_PLAN, setPREMIUM_PLAN] = useState(loadPremiumPlan);
+  const [editingPremiumPlan, setEditingPremiumPlan] = useState(false);
+  const [premiumDraft, setPremiumDraft] = useState(null);
 
   const hasBook = chapters.length > 0;
   const isAdmin = useMemo(() => user && ADMIN_EMAILS.includes(user.email), [user]);
@@ -1562,13 +1574,18 @@ const App = () => {
                  <button
                   className="btn btn-primary btn-block btn-lg"
                   data-stripe-price-id={PREMIUM_PLAN.stripe_price_id}
-                  onClick={() => {
+                  style={{ transition: 'all 0.2s ease' }}
+                  onClick={(e) => {
+                    const btn = e.currentTarget;
                     // MANIFESTO: Apenas pessoas logadas podem comprar plano premium
                     if (!user) {
                       setShowAuthModal(true);
                     } else {
-                      // Redirect to real Stripe Payment Link with user ID
-                      window.location.href = getPaymentLink(PREMIUM_PLAN.stripe_price_id, PREMIUM_PLAN.stripe_payment_link, user.id);
+                      btn.style.background = '#10b981';
+                      btn.innerHTML = '✓ Redirecting to Stripe...';
+                      setTimeout(() => {
+                        window.location.href = getPaymentLink(PREMIUM_PLAN.stripe_price_id, PREMIUM_PLAN.stripe_payment_link, user.id);
+                      }, 500);
                     }
                   }}
                 >
@@ -1637,6 +1654,7 @@ const App = () => {
                         <th>Language</th>
                         <th>Free</th>
                         <th>Price</th>
+                        <th>Stripe</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -1657,9 +1675,16 @@ const App = () => {
                                 <input type="checkbox" checked={adminEditingBook.free} onChange={(e) => setAdminEditingBook(p => ({ ...p, free: e.target.checked }))} />
                               </td>
                               <td><input type="number" value={adminEditingBook.price_cents || 0} onChange={(e) => setAdminEditingBook(p => ({ ...p, price_cents: Number(e.target.value) }))} /></td>
-                              <td className="admin-actions">
-                                <button className="btn btn-primary btn-sm" onClick={() => handleAdminUpdateBook(adminEditingBook)}><Icons.Check /></button>
-                                <button className="btn btn-ghost btn-sm" onClick={() => setAdminEditingBook(null)}><Icons.X /></button>
+                              <td colSpan="2">
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                  <input placeholder="EPUB URL" value={adminEditingBook.epub_url || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, epub_url: e.target.value }))} style={{ fontSize: '11px' }} />
+                                  <input placeholder="Stripe Price ID" value={adminEditingBook.stripe_price_id || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, stripe_price_id: e.target.value }))} style={{ fontSize: '11px' }} />
+                                  <input placeholder="Payment Link URL" value={adminEditingBook.stripe_payment_link || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, stripe_payment_link: e.target.value }))} style={{ fontSize: '11px' }} />
+                                </div>
+                                <div style={{ marginTop: '6px', display: 'flex', gap: '4px' }}>
+                                  <button className="btn btn-primary btn-sm" onClick={() => handleAdminUpdateBook(adminEditingBook)}><Icons.Check /> Save</button>
+                                  <button className="btn btn-ghost btn-sm" onClick={() => setAdminEditingBook(null)}><Icons.X /></button>
+                                </div>
                               </td>
                             </>
                           ) : (
@@ -1670,6 +1695,13 @@ const App = () => {
                               <td>{book.Language || '—'}</td>
                               <td>{book.free ? '✓ Free' : '💎 Paid'}</td>
                               <td>{book.free ? '—' : `$${((book.price_cents || 0) / 100).toFixed(2)}`}</td>
+                              <td style={{ fontSize: '11px', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {book.stripe_price_id ? (
+                                  <span title={`Price: ${book.stripe_price_id}\nLink: ${book.stripe_payment_link || 'N/A'}`} style={{ cursor: 'help', color: '#10b981' }}>✅ Configured</span>
+                                ) : (
+                                  <span style={{ color: '#ef4444' }}>⚠️ Missing</span>
+                                )}
+                              </td>
                               <td className="admin-actions">
                                 <button className="btn btn-ghost btn-sm" onClick={() => setAdminEditingBook({ ...book })} title="Edit"><Icons.Edit /></button>
                                 <button className="btn btn-ghost btn-sm" onClick={() => handleAdminDeleteBook(book.id)} title="Delete" style={{ color: '#ef4444' }}><Icons.Trash /></button>
@@ -1686,35 +1718,71 @@ const App = () => {
 
             {/* ─── Subscription Management ─── */}
             <div className="admin-card glass">
-              <h3><Icons.CreditCard /> Subscription Plan (Stripe)</h3>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                Active monthly Pro plan connected to Stripe. Payment Links are configured and live.
-              </p>
-              <div className="admin-form-grid">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0 }}><Icons.CreditCard /> Premium Plan (Stripe)</h3>
+                {!editingPremiumPlan ? (
+                  <button className="btn btn-ghost btn-sm" onClick={() => { setEditingPremiumPlan(true); setPremiumDraft({ ...PREMIUM_PLAN }); }}>
+                    <Icons.Edit /> Edit Plan
+                  </button>
+                ) : (
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button className="btn btn-primary btn-sm" onClick={() => {
+                      setPREMIUM_PLAN(premiumDraft);
+                      localStorage.setItem('traxbook_premium_plan', JSON.stringify(premiumDraft));
+                      setEditingPremiumPlan(false);
+                      alert('Premium plan updated and saved!');
+                    }}>
+                      <Icons.Check /> Save
+                    </button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => { setEditingPremiumPlan(false); setPremiumDraft(null); }}>
+                      <Icons.X /> Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="admin-form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
                 <div className="admin-stripe-row">
                   <label>Plan Name</label>
-                  <input value={PREMIUM_PLAN.name} readOnly />
+                  <input value={editingPremiumPlan ? premiumDraft.name : PREMIUM_PLAN.name} readOnly={!editingPremiumPlan} onChange={(e) => setPremiumDraft(p => ({ ...p, name: e.target.value }))} />
                 </div>
                 <div className="admin-stripe-row">
-                  <label>Monthly Price</label>
-                  <input value={`$${(PREMIUM_PLAN.price_cents / 100).toFixed(2)} / ${PREMIUM_PLAN.interval}`} readOnly />
+                  <label>Description</label>
+                  <input value={editingPremiumPlan ? premiumDraft.description : PREMIUM_PLAN.description} readOnly={!editingPremiumPlan} onChange={(e) => setPremiumDraft(p => ({ ...p, description: e.target.value }))} />
+                </div>
+                <div className="admin-stripe-row">
+                  <label>Price (cents)</label>
+                  <input type="number" value={editingPremiumPlan ? premiumDraft.price_cents : PREMIUM_PLAN.price_cents} readOnly={!editingPremiumPlan} onChange={(e) => setPremiumDraft(p => ({ ...p, price_cents: Number(e.target.value) }))} />
+                </div>
+                <div className="admin-stripe-row">
+                  <label>Interval</label>
+                  {editingPremiumPlan ? (
+                    <select value={premiumDraft.interval} onChange={(e) => setPremiumDraft(p => ({ ...p, interval: e.target.value }))}>
+                      <option value="month">month</option>
+                      <option value="year">year</option>
+                    </select>
+                  ) : (
+                    <input value={PREMIUM_PLAN.interval} readOnly />
+                  )}
                 </div>
                 <div className="admin-stripe-row">
                   <label>Stripe Price ID</label>
-                  <input value={PREMIUM_PLAN.stripe_price_id} readOnly />
-                </div>
-                <div className="admin-stripe-row">
-                  <label>Payment Link</label>
-                  <input value={PREMIUM_PLAN.stripe_payment_link} readOnly />
+                  <input value={editingPremiumPlan ? premiumDraft.stripe_price_id : PREMIUM_PLAN.stripe_price_id} readOnly={!editingPremiumPlan} onChange={(e) => setPremiumDraft(p => ({ ...p, stripe_price_id: e.target.value }))} style={{ fontFamily: 'monospace', fontSize: '12px' }} />
                 </div>
                 <div className="admin-stripe-row">
                   <label>Stripe Product ID</label>
-                  <input value={PREMIUM_PLAN.stripe_product_id} readOnly />
+                  <input value={editingPremiumPlan ? premiumDraft.stripe_product_id : PREMIUM_PLAN.stripe_product_id} readOnly={!editingPremiumPlan} onChange={(e) => setPremiumDraft(p => ({ ...p, stripe_product_id: e.target.value }))} style={{ fontFamily: 'monospace', fontSize: '12px' }} />
+                </div>
+                <div className="admin-stripe-row" style={{ gridColumn: '1 / -1' }}>
+                  <label>Payment Link URL</label>
+                  <input value={editingPremiumPlan ? premiumDraft.stripe_payment_link : PREMIUM_PLAN.stripe_payment_link} readOnly={!editingPremiumPlan} onChange={(e) => setPremiumDraft(p => ({ ...p, stripe_payment_link: e.target.value }))} style={{ fontFamily: 'monospace', fontSize: '12px' }} />
                 </div>
               </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '16px' }}>
-                ✅ Payment Links estão configurados e prontos. Para ativar completamente, configure um Stripe Webhook para atualizar <code>profiles.is_premium</code> automaticamente após a compra.
-              </p>
+              <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(16,185,129,0.08)', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.2)' }}>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
+                  💰 Displayed price: <strong>${(PREMIUM_PLAN.price_cents / 100).toFixed(2)} / {PREMIUM_PLAN.interval}</strong><br/>
+                  🔗 Payment Link: <a href={PREMIUM_PLAN.stripe_payment_link} target="_blank" rel="noreferrer" style={{ color: '#6366f1', wordBreak: 'break-all' }}>{PREMIUM_PLAN.stripe_payment_link}</a>
+                </p>
+              </div>
             </div>
           </section>
         )}
@@ -1875,13 +1943,22 @@ const App = () => {
                         <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>$12.00</div>
                         <button 
                           className="btn btn-primary" 
-                          style={{ background: 'white', color: '#4f46e5', border: 'none' }}
-                          onClick={() => {
-                            if (!user) setShowAuthModal(true);
-                            else window.location.href = getPaymentLink('price_1TOIaQF0lxCQwtFqiDtYDNU8', null, user.id);
+                          style={{ background: 'white', color: '#4f46e5', border: 'none', transition: 'all 0.2s ease' }}
+                          onClick={(e) => {
+                            const btn = e.currentTarget;
+                            if (!user) {
+                              setShowAuthModal(true);
+                            } else {
+                              btn.style.background = '#10b981';
+                              btn.style.color = '#fff';
+                              btn.textContent = 'Redirecting...';
+                              setTimeout(() => {
+                                window.location.href = getPaymentLink('price_1TOIaQF0lxCQwtFqiDtYDNU8', null, user.id);
+                              }, 400);
+                            }
                           }}
                         >
-                          Buy Combo
+                          Buy Combo — $12.00
                         </button>
                       </div>
                     </div>
@@ -1923,31 +2000,42 @@ const App = () => {
                               <span className={`mk-diff mode-${(book.difficulty || 'beginner').trim().toLowerCase()}`}>
                                 {book.difficulty || 'Beginner'}
                               </span>
-                              {!book.free && (
-                                <span className="mk-price-tag">{displayPrice}</span>
-                              )}
+                              <span className="mk-price-tag" style={book.free ? { background: 'rgba(16,185,129,0.15)', color: '#10b981' } : {}}>
+                                {book.free ? 'Free' : displayPrice}
+                              </span>
                             </div>
                             <h4>{book.title}</h4>
                             <p>{book.author}</p>
                             <button 
                               className={`btn ${book.free || isPremium ? 'btn-primary' : 'btn-secondary'} mk-action-btn`}
-                              onClick={() => {
+                              style={{ transition: 'all 0.2s ease' }}
+                              onClick={(e) => {
+                                const btn = e.currentTarget;
                                 if (!book.free && !isPremium && !user) {
                                   setShowAuthModal(true);
                                 } else if (!book.free && !isPremium) {
+                                  // Visual feedback
+                                  btn.style.background = '#6366f1';
+                                  btn.style.color = '#fff';
+                                  btn.textContent = 'Redirecting...';
                                   // Buy individual book via Stripe Payment Link
                                   const payLink = getPaymentLink(book.stripe_price_id, book.stripe_payment_link, user.id);
                                   if (payLink) {
-                                    window.location.href = payLink;
+                                    setTimeout(() => { window.location.href = payLink; }, 400);
                                   } else {
-                                    alert('Payment link not configured for this book. Contact support.');
+                                    btn.style.background = '#ef4444';
+                                    btn.textContent = 'Not Configured';
+                                    setTimeout(() => { btn.style.background = ''; btn.textContent = 'Buy Now'; }, 2000);
                                   }
                                 } else {
+                                  btn.style.background = '#10b981';
+                                  btn.style.color = '#fff';
+                                  btn.textContent = 'Loading...';
                                   handleDownloadMarketplaceEpub(book);
                                 }
                               }}
                             >
-                              {book.free || isPremium ? 'Start Translating' : 'Buy Now'}
+                              {book.free || isPremium ? 'Start Translating' : `Buy ${displayPrice}`}
                             </button>
                           </div>
                         </div>
