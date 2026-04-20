@@ -812,6 +812,12 @@ const App = () => {
 
   /* ─── Handle file ─── */
   const handleFile = useCallback(async (file) => {
+    // MANIFESTO: Apenas usuários logados podem fazer upload
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
     // MANIFESTO: Aceitar upload apenas de arquivos .epub
     if (!file || !file.name.toLowerCase().endsWith('.epub')) {
       alert('Only .epub files are accepted.');
@@ -976,9 +982,16 @@ const App = () => {
   const onDrop = useCallback((e) => {
     e.preventDefault();
     setDragActive(false);
+    
+    // MANIFESTO: Apenas usuários logados podem fazer upload
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
     const file = e.dataTransfer.files[0];
     handleFile(file);
-  }, [handleFile]);
+  }, [handleFile, user]);
 
   /* ─── Clear book ─── */
   const clearBook = useCallback(() => {
@@ -1700,7 +1713,10 @@ const App = () => {
               <div className="tab-pane fade-in">
                 <div
                   className={`drop-zone ${dragActive ? 'dragover' : ''}`}
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => {
+                    if (!user) setShowAuthModal(true);
+                    else fileInputRef.current?.click();
+                  }}
                   onDragOver={onDragOver}
                   onDragLeave={onDragLeave}
                   onDrop={onDrop}
@@ -1708,8 +1724,12 @@ const App = () => {
                   <div className="drop-icon">
                     <Icons.Upload />
                   </div>
-                  <span className="drop-text-main">Drag your EPUB or click here</span>
-                  <span className="drop-text-sub">Only .epub files are accepted</span>
+                  <span className="drop-text-main">
+                    {!user ? 'Sign in to upload your EPUB' : 'Drag your EPUB or click here'}
+                  </span>
+                  <span className="drop-text-sub">
+                    {!user ? 'Authentication is required for uploads' : 'Only .epub files are accepted'}
+                  </span>
                   <input
                     ref={fileInputRef}
                     type="file"
