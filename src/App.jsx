@@ -962,7 +962,10 @@ const App = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', 'flashcards_anki.csv');
+      const fileName = metadata?.title 
+        ? `flashcards_${metadata.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`
+        : 'flashcards_anki.csv';
+      link.setAttribute('download', fileName);
       document.body.appendChild(link);
       link.click();
       link.remove();
