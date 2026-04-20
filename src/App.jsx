@@ -801,50 +801,54 @@ const App = () => {
     setStatus('Saving...');
     
     try {
-      const { data: bookData, error: bookErr } = await supabase
-        .from('books')
-        .insert([{
-          title: metadata.title,
-          author: metadata.creator || 'Unknown',
-          user_id: user.id
-        }])
-        .select()
-        .single();
+      const drivePayload = {
+        user_id: user.id,
+        book_title: metadata.title,
+        book_data: { metadata, chapters, currentChapter },
+        updated_at: new Date().toISOString()
+      };
+
+      // Check if entry exists for this book & user
+      const { data: existing, error: searchErr } = await supabase
+        .from('traxbook_drive')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('book_title', metadata.title);
         
-      if (bookErr) throw bookErr;
-      const supabaseBookId = bookData.id;
+      if (searchErr) {
+          if (searchErr.code === '42P01') {
+              throw new Error("The table 'traxbook_drive' does not exist in your Supabase backend. Please create it with columns: id (uuid), user_id (uuid), book_title (text), book_data (jsonb), updated_at (timestamp).");
+          }
+          throw searchErr;
+      }
 
-      const translationsToInsert = [];
-      let globalIndex = 0;
-      
-      chapters.forEach(ch => {
-        ch.paragraphs.forEach(p => {
-          translationsToInsert.push({
-            book_id: supabaseBookId,
-            section_index: globalIndex,
-            source_text: p.source,
-            translated_text: p.translation || null,
-            status: p.translation && p.translation.trim() ? 'translated' : 'pending'
-          });
-          globalIndex++;
-        });
-      });
-
-      const BATCH_SIZE = 500;
-      for (let i = 0; i < translationsToInsert.length; i += BATCH_SIZE) {
-        const batch = translationsToInsert.slice(i, i + BATCH_SIZE);
-        const { error: txtErr } = await supabase.from('translations').insert(batch);
-        if (txtErr) throw txtErr;
+      if (existing && existing.length > 0) {
+        const { error: updateErr } = await supabase
+          .from('traxbook_drive')
+          .update(drivePayload)
+          .eq('id', existing[0].id);
+        if (updateErr) throw updateErr;
+      } else {
+        const { error: insertErr } = await supabase
+          .from('traxbook_drive')
+          .insert([drivePayload]);
+        if (insertErr) throw insertErr;
       }
       
       setStatus('Saved');
-      alert('Translation progress saved to the cloud successfully!');
+      setConfirmModal({
+        show: true,
+        title: 'Traxbook Drive Synced!',
+        message: 'Your progress is safely stored in the cloud. You can sync from any device logged into this Google account.',
+        confirmText: 'OK',
+        onConfirm: () => {}
+      });
     } catch (e) {
       console.error('Failed to save to cloud:', e);
-      alert('Error saving to the cloud: ' + e.message);
+      alert('Cloud Sync Error: ' + e.message);
       setStatus('Modified');
     }
-  }, [metadata, chapters, user, isPremium]);
+  }, [metadata, chapters, currentChapter, user, isPremium]);
 
   /* ─── Translation change ─── */
   const handleTranslationChange = useCallback((chapterIdx, paraIdx, value) => {
