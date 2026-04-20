@@ -1576,9 +1576,14 @@ const App = () => {
                           )}
                         </div>
                         <div className="mk-info">
-                          <span className={`mk-diff mode-${(book.difficulty || 'beginner').toLowerCase()}`}>
-                            {book.difficulty || 'Beginner'}
-                          </span>
+                          <div className="mk-meta-row">
+                            <span className={`mk-diff mode-${(book.difficulty || 'beginner').toLowerCase()}`}>
+                              {book.difficulty || 'Beginner'}
+                            </span>
+                            <span className="mk-language">
+                              {book.language || 'EN'}
+                            </span>
+                          </div>
                           <h4>{book.title}</h4>
                           <p>{book.author}</p>
                           <button 
