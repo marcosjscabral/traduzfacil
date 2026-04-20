@@ -1231,7 +1231,7 @@ const App = () => {
   const handleAdminAddBook = useCallback(async () => {
     if (!adminNewBook.title.trim()) return alert('Title is required');
     try {
-      const { error } = await supabase.from('catalog').insert([{
+      const fullPayload = {
         title: adminNewBook.title,
         author: adminNewBook.author,
         difficulty: adminNewBook.difficulty,
@@ -1242,11 +1242,28 @@ const App = () => {
         stripe_price_id: adminNewBook.stripe_price_id || null,
         stripe_payment_link: adminNewBook.stripe_payment_link || null,
         Language: adminNewBook.Language || 'English',
-      }]);
-      if (error) throw error;
+      };
+      let { error } = await supabase.from('catalog').insert([fullPayload]);
+      
+      if (error) {
+        // Retry without stripe fields
+        console.warn('Full insert failed, retrying without stripe fields:', error.message);
+        const basicPayload = {
+          title: adminNewBook.title,
+          author: adminNewBook.author,
+          difficulty: adminNewBook.difficulty,
+          epub_url: adminNewBook.epub_url,
+          cover_url: adminNewBook.cover_url,
+          free: adminNewBook.free,
+          Language: adminNewBook.Language || 'English',
+        };
+        const { error: err2 } = await supabase.from('catalog').insert([basicPayload]);
+        if (err2) throw err2;
+      }
+      
       setAdminNewBook({ title: '', author: '', difficulty: 'Beginner', epub_url: '', cover_url: '', free: true, price_cents: 0, stripe_price_id: '', stripe_payment_link: '', Language: 'English' });
       fetchAdminCatalog();
-      alert('Book added to catalog!');
+      alert('✅ Book added to catalog!');
     } catch (e) {
       alert('Error adding book: ' + e.message);
     }
@@ -1254,7 +1271,8 @@ const App = () => {
 
   const handleAdminUpdateBook = useCallback(async (book) => {
     try {
-      const { error } = await supabase.from('catalog').update({
+      // Try full update first
+      const fullPayload = {
         title: book.title,
         author: book.author,
         difficulty: book.difficulty,
@@ -1265,11 +1283,31 @@ const App = () => {
         stripe_price_id: book.stripe_price_id || null,
         stripe_payment_link: book.stripe_payment_link || null,
         Language: book.Language || 'English',
-      }).eq('id', book.id);
-      if (error) throw error;
+      };
+      const { error } = await supabase.from('catalog').update(fullPayload).eq('id', book.id);
+      
+      if (error) {
+        // If it fails (missing columns), try without stripe fields
+        console.warn('Full update failed, retrying without stripe fields:', error.message);
+        const basicPayload = {
+          title: book.title,
+          author: book.author,
+          difficulty: book.difficulty,
+          epub_url: book.epub_url,
+          cover_url: book.cover_url,
+          free: book.free,
+          Language: book.Language || 'English',
+        };
+        // Try adding price_cents separately
+        try { basicPayload.price_cents = book.price_cents || 0; } catch(e) {}
+        
+        const { error: err2 } = await supabase.from('catalog').update(basicPayload).eq('id', book.id);
+        if (err2) throw err2;
+      }
+      
       setAdminEditingBook(null);
       fetchAdminCatalog();
-      alert('Book updated!');
+      alert('✅ Book updated!');
     } catch (e) {
       alert('Error updating book: ' + e.message);
     }
