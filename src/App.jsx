@@ -154,6 +154,24 @@ function getPaymentLink(stripePriceId, fallbackPaymentLink, userId) {
   return `${baseUrl}${separator}client_reference_id=${userId}`;
 }
 
+// Helper: call Stripe Admin Edge Function
+async function callStripeAdmin(action, payload) {
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not authenticated');
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/stripe-admin`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ action, ...payload }),
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error || 'Stripe API error');
+  return data;
+}
+
 /* ─────────────────── MOCK MARKETPLACE (SUPABASE PREVIEW) ─────────────────── */
 const MOCK_MARKETPLACE = [
   {
@@ -539,7 +557,7 @@ const App = () => {
   /* ─── Admin State ─── */
   const [adminCatalog, setAdminCatalog] = useState([]);
   const [adminEditingBook, setAdminEditingBook] = useState(null);
-  const [adminNewBook, setAdminNewBook] = useState({ title: '', author: '', difficulty: 'Beginner', epub_url: '', cover_url: '', free: true, price_cents: 0, stripe_price_id: '', stripe_payment_link: '', Language: 'English' });
+  const [adminNewBook, setAdminNewBook] = useState({ title: '', author: '', difficulty: 'Beginner', epub_url: '', cover_url: '', free: true, premium_only: false, price_cents: 0, stripe_price_id: '', stripe_payment_link: '', Language: 'English' });
   const [PREMIUM_PLAN, setPREMIUM_PLAN] = useState(loadPremiumPlan);
   const [editingPremiumPlan, setEditingPremiumPlan] = useState(false);
   const [premiumDraft, setPremiumDraft] = useState(null);
@@ -1238,6 +1256,7 @@ const App = () => {
         epub_url: adminNewBook.epub_url,
         cover_url: adminNewBook.cover_url,
         free: adminNewBook.free,
+        premium_only: adminNewBook.premium_only || false,
         price_cents: adminNewBook.price_cents || 0,
         stripe_price_id: adminNewBook.stripe_price_id || null,
         stripe_payment_link: adminNewBook.stripe_payment_link || null,
@@ -1261,7 +1280,7 @@ const App = () => {
         if (err2) throw err2;
       }
       
-      setAdminNewBook({ title: '', author: '', difficulty: 'Beginner', epub_url: '', cover_url: '', free: true, price_cents: 0, stripe_price_id: '', stripe_payment_link: '', Language: 'English' });
+      setAdminNewBook({ title: '', author: '', difficulty: 'Beginner', epub_url: '', cover_url: '', free: true, premium_only: false, price_cents: 0, stripe_price_id: '', stripe_payment_link: '', Language: 'English' });
       fetchAdminCatalog();
       alert('✅ Book added to catalog!');
     } catch (e) {
@@ -1279,6 +1298,7 @@ const App = () => {
         epub_url: book.epub_url,
         cover_url: book.cover_url,
         free: book.free,
+        premium_only: book.premium_only || false,
         price_cents: book.price_cents || 0,
         stripe_price_id: book.stripe_price_id || null,
         stripe_payment_link: book.stripe_payment_link || null,
@@ -1705,6 +1725,10 @@ const App = () => {
                   <input type="checkbox" checked={adminNewBook.free} onChange={(e) => setAdminNewBook(p => ({ ...p, free: e.target.checked }))} />
                   <span>Free Book</span>
                 </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px' }}>
+                  <input type="checkbox" checked={adminNewBook.premium_only} onChange={(e) => setAdminNewBook(p => ({ ...p, premium_only: e.target.checked }))} />
+                  <span>👑 Premium Only</span>
+                </label>
                 {!adminNewBook.free && (
                   <input type="number" placeholder="Price (cents, ex: 500 = $5.00)" value={adminNewBook.price_cents} onChange={(e) => setAdminNewBook(p => ({ ...p, price_cents: Number(e.target.value) }))} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                 )}
@@ -1736,6 +1760,7 @@ const App = () => {
                         </div>
                         <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                           {book.author || 'Unknown'} · {book.Language || 'English'} · {book.free ? '🆓 Free' : `💰 $${((book.price_cents || 0) / 100).toFixed(2)}`}
+                          {book.premium_only ? ' · 👑 Premium Only' : ''}
                           {!book.free && book.stripe_price_id ? ' · ✅ Stripe OK' : !book.free ? ' · ⚠️ No Stripe' : ''}
                         </div>
                       </div>
@@ -1801,6 +1826,10 @@ const App = () => {
                   <input type="checkbox" checked={adminEditingBook.free} onChange={(e) => setAdminEditingBook(p => ({ ...p, free: e.target.checked }))} />
                   <span style={{ fontWeight: 500 }}>Free Book (no payment required)</span>
                 </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', cursor: 'pointer', padding: '8px 12px', borderRadius: '8px', background: adminEditingBook.premium_only ? 'rgba(139,92,246,0.1)' : 'transparent', border: adminEditingBook.premium_only ? '1px solid rgba(139,92,246,0.3)' : '1px solid transparent' }}>
+                  <input type="checkbox" checked={adminEditingBook.premium_only || false} onChange={(e) => setAdminEditingBook(p => ({ ...p, premium_only: e.target.checked }))} />
+                  <span style={{ fontWeight: 500 }}>👑 Premium Only (only premium subscribers can access)</span>
+                </label>
                 {!adminEditingBook.free && (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
@@ -1814,6 +1843,88 @@ const App = () => {
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Stripe Payment Link</label>
                       <input value={adminEditingBook.stripe_payment_link || ''} onChange={(e) => setAdminEditingBook(p => ({ ...p, stripe_payment_link: e.target.value }))} placeholder="https://buy.stripe.com/..." style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '12px' }} />
+                    </div>
+                    
+                    {/* ─── Stripe API Buttons ─── */}
+                    <div style={{ gridColumn: '1 / -1', marginTop: '8px', padding: '12px', borderRadius: '8px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                      {!adminEditingBook.stripe_price_id ? (
+                        <div>
+                          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>
+                            ⚡ No Stripe product yet. Create one automatically:
+                          </p>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            id="stripe-create-btn"
+                            onClick={async (e) => {
+                              const btn = e.currentTarget;
+                              if (!adminEditingBook.price_cents || adminEditingBook.price_cents <= 0) {
+                                return alert('Set a price first (in cents, e.g. 199 = $1.99)');
+                              }
+                              btn.disabled = true;
+                              btn.textContent = '⏳ Creating on Stripe...';
+                              try {
+                                const result = await callStripeAdmin('create_product', {
+                                  title: adminEditingBook.title,
+                                  price_cents: adminEditingBook.price_cents,
+                                  currency: 'usd',
+                                });
+                                setAdminEditingBook(p => ({
+                                  ...p,
+                                  stripe_price_id: result.stripe_price_id,
+                                  stripe_payment_link: result.stripe_payment_link,
+                                }));
+                                alert(`✅ Created on Stripe!\nProduct: ${result.stripe_product_id}\nPrice: ${result.stripe_price_id}`);
+                              } catch (err) {
+                                alert('❌ Error: ' + err.message);
+                              } finally {
+                                btn.disabled = false;
+                                btn.textContent = '⚡ Create Product on Stripe';
+                              }
+                            }}
+                          >
+                            ⚡ Create Product on Stripe
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>
+                            ✅ Stripe configured. Change the price above and click Update to sync:
+                          </p>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            id="stripe-update-btn"
+                            onClick={async (e) => {
+                              const btn = e.currentTarget;
+                              if (!adminEditingBook.price_cents || adminEditingBook.price_cents <= 0) {
+                                return alert('Set a valid price first');
+                              }
+                              btn.disabled = true;
+                              btn.textContent = '⏳ Updating price on Stripe...';
+                              try {
+                                const result = await callStripeAdmin('update_price', {
+                                  stripe_product_id: adminEditingBook.stripe_product_id || null,
+                                  stripe_price_id_old: adminEditingBook.stripe_price_id,
+                                  price_cents: adminEditingBook.price_cents,
+                                  currency: 'usd',
+                                });
+                                setAdminEditingBook(p => ({
+                                  ...p,
+                                  stripe_price_id: result.stripe_price_id,
+                                  stripe_payment_link: result.stripe_payment_link,
+                                }));
+                                alert(`✅ Price updated on Stripe!\nNew Price ID: ${result.stripe_price_id}`);
+                              } catch (err) {
+                                alert('❌ Error: ' + err.message);
+                              } finally {
+                                btn.disabled = false;
+                                btn.textContent = '🔄 Update Price on Stripe';
+                              }
+                            }}
+                          >
+                            🔄 Update Price on Stripe
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -2027,14 +2138,9 @@ const App = () => {
                       return (
                         <div key={book.id} className="mk-card">
                           <div className="mk-cover" style={{ backgroundImage: `url(${book.cover_url || ''})` }}>
-                            {!book.free && !isPremium && (
+                            {book.premium_only && (
                               <div className="mk-premium-badge">
                                 <Icons.Lock /> Premium
-                              </div>
-                            )}
-                            {isPremium && !book.free && (
-                              <div className="mk-premium-badge" style={{ background: '#10b981' }}>
-                                <Icons.Zap /> Exclusive Price
                               </div>
                             )}
                           </div>
@@ -2043,34 +2149,37 @@ const App = () => {
                               <span className={`mk-diff mode-${(book.difficulty || 'beginner').trim().toLowerCase()}`}>
                                 {book.difficulty || 'Beginner'}
                               </span>
-                              <span className="mk-price-tag" style={book.free ? { background: 'rgba(16,185,129,0.15)', color: '#10b981' } : {}}>
-                                {book.free ? 'Free' : displayPrice}
+                              <span className="mk-price-tag" style={book.free || book.premium_only ? { background: book.premium_only ? 'rgba(139,92,246,0.15)' : 'rgba(16,185,129,0.15)', color: book.premium_only ? '#8b5cf6' : '#10b981' } : {}}>
+                                {book.free ? 'Free' : book.premium_only ? '👑 Premium' : displayPrice}
                               </span>
                             </div>
                             <h4>{book.title}</h4>
                             <p>{book.author}</p>
                             <button 
-                              className={`btn ${book.free || isPremium ? 'btn-primary' : 'btn-secondary'} mk-action-btn`}
+                              className={`btn ${book.free || isPremium || (!book.premium_only && !book.free) ? (book.premium_only && !isPremium ? 'btn-secondary' : 'btn-primary') : 'btn-secondary'} mk-action-btn`}
                               style={{ transition: 'all 0.2s ease' }}
                               onClick={(e) => {
                                 const btn = e.currentTarget;
-                                if (!book.free && !isPremium && !user) {
+                                if (!user) {
                                   setShowAuthModal(true);
-                                } else if (!book.free && !isPremium) {
-                                  // Visual feedback
+                                } else if (book.premium_only && !isPremium) {
+                                  // Premium-only book, user is not premium → go to pricing
+                                  setCurrentView('pricing');
+                                } else if (!book.free && !book.premium_only && !isPremium) {
+                                  // Paid book, not premium-only → buy it
                                   btn.style.background = '#6366f1';
                                   btn.style.color = '#fff';
                                   btn.textContent = 'Redirecting...';
-                                  // Buy individual book via Stripe Payment Link
                                   const payLink = getPaymentLink(book.stripe_price_id, book.stripe_payment_link, user.id);
                                   if (payLink) {
                                     setTimeout(() => { window.location.href = payLink; }, 400);
                                   } else {
                                     btn.style.background = '#ef4444';
                                     btn.textContent = 'Not Configured';
-                                    setTimeout(() => { btn.style.background = ''; btn.textContent = 'Buy Now'; }, 2000);
+                                    setTimeout(() => { btn.style.background = ''; btn.textContent = `Buy ${displayPrice}`; }, 2000);
                                   }
                                 } else {
+                                  // Free or premium user → open
                                   btn.style.background = '#10b981';
                                   btn.style.color = '#fff';
                                   btn.textContent = 'Loading...';
@@ -2078,7 +2187,7 @@ const App = () => {
                                 }
                               }}
                             >
-                              {book.free || isPremium ? 'Start Translating' : `Buy ${displayPrice}`}
+                              {book.premium_only && !isPremium ? '🔒 Premium Only' : book.free || isPremium ? 'Start Translating' : `Buy ${displayPrice}`}
                             </button>
                           </div>
                         </div>
