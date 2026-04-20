@@ -136,9 +136,13 @@ const STRIPE_PAYMENT_LINKS = {
 };
 
 // Helper: resolve the correct payment link for a book or plan
-function getPaymentLink(stripePriceId, fallbackPaymentLink) {
-  if (fallbackPaymentLink) return fallbackPaymentLink;
-  return STRIPE_PAYMENT_LINKS[stripePriceId] || null;
+// Appends client_reference_id so the Stripe webhook can identify the Supabase user
+function getPaymentLink(stripePriceId, fallbackPaymentLink, userId) {
+  const baseUrl = fallbackPaymentLink || STRIPE_PAYMENT_LINKS[stripePriceId];
+  if (!baseUrl) return null;
+  if (!userId) return baseUrl;
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}client_reference_id=${userId}`;
 }
 
 /* ─────────────────── MOCK MARKETPLACE (SUPABASE PREVIEW) ─────────────────── */
@@ -612,6 +616,45 @@ const App = () => {
     };
 
     fetchOrCreateProfile();
+  }, [user]);
+
+  /* ─── Detect Stripe Payment Return ─── */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const stripeSuccess = params.get('stripe_success');
+    const stripeCancel = params.get('stripe_cancel');
+
+    if (stripeSuccess === 'true' && user) {
+      // Clean URL
+      window.history.replaceState(null, '', window.location.pathname);
+      
+      // Re-fetch profile from Supabase since webhook may have updated is_premium
+      const refreshProfile = async () => {
+        // Small delay to let webhook process
+        await new Promise(r => setTimeout(r, 2000));
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+          if (!error && data) {
+            setProfile(data);
+            if (data.is_premium) {
+              alert('🎉 Payment successful! Welcome to Traxbook Premium! Your account has been upgraded.');
+            } else {
+              alert('✅ Payment received! Your Premium status will activate in a few moments. Please refresh the page if needed.');
+            }
+          }
+        } catch (e) {
+          console.warn('Could not refresh profile after payment:', e);
+        }
+      };
+      refreshProfile();
+    } else if (stripeCancel === 'true') {
+      window.history.replaceState(null, '', window.location.pathname);
+      alert('Payment was cancelled. You can try again anytime from the Pricing page.');
+    }
   }, [user]);
 
   /* ─── Load library on mount ─── */
@@ -1524,8 +1567,8 @@ const App = () => {
                     if (!user) {
                       setShowAuthModal(true);
                     } else {
-                      // Redirect to real Stripe Payment Link
-                      window.location.href = PREMIUM_PLAN.stripe_payment_link;
+                      // Redirect to real Stripe Payment Link with user ID
+                      window.location.href = getPaymentLink(PREMIUM_PLAN.stripe_price_id, PREMIUM_PLAN.stripe_payment_link, user.id);
                     }
                   }}
                 >
@@ -1835,7 +1878,7 @@ const App = () => {
                           style={{ background: 'white', color: '#4f46e5', border: 'none' }}
                           onClick={() => {
                             if (!user) setShowAuthModal(true);
-                            else window.location.href = getPaymentLink('price_1TOIaQF0lxCQwtFqiDtYDNU8');
+                            else window.location.href = getPaymentLink('price_1TOIaQF0lxCQwtFqiDtYDNU8', null, user.id);
                           }}
                         >
                           Buy Combo
@@ -1893,7 +1936,7 @@ const App = () => {
                                   setShowAuthModal(true);
                                 } else if (!book.free && !isPremium) {
                                   // Buy individual book via Stripe Payment Link
-                                  const payLink = getPaymentLink(book.stripe_price_id, book.stripe_payment_link);
+                                  const payLink = getPaymentLink(book.stripe_price_id, book.stripe_payment_link, user.id);
                                   if (payLink) {
                                     window.location.href = payLink;
                                   } else {
