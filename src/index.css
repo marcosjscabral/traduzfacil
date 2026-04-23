@@ -85,6 +85,12 @@ body {
   gap: 10px;
 }
 
+.brand-logo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+}
+
 .header-brand svg {
   width: 24px;
   height: 24px;

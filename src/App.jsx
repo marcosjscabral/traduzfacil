@@ -1565,7 +1565,7 @@ const App = () => {
       {/* ═══ Header ═══ */}
       <header className="app-header">
         <div className="header-brand" onClick={() => { if (!hasBook) setCurrentView('home'); else clearBook(); }} style={{ cursor: 'pointer' }}>
-          <Icons.Globe />
+          <img src="/logo.png" alt="Traxbook Logo" className="brand-logo" />
           <h1 className="gradient-text">Traxbook<span></span></h1>
         </div>
 
