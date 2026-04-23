@@ -904,52 +904,71 @@ const App = () => {
       const { metadata: meta, chapters: chs } = await parseEpub(arrayBuffer);
       const id = btoa(unescape(encodeURIComponent(meta.title + '||' + meta.creator))).replace(/[^a-zA-Z0-9]/g, '');
 
-      // MANIFESTO: Pessoas logadas: Upload 1 arquivo / 7 days (ou mesmo ID)
-      // Consulta o banco de dados DIRETAMENTE para evitar burlar com refresh
+      // MANIFESTO: Pessoas logadas (gratuitas): Upload 1 arquivo / 7 dias.
+      // Não importa se atualizar a página ou logar em outro computador.
+      // Dupla camada: localStorage (imediato) + Supabase (cross-device).
       if (user && !isPremium) {
+        const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+        let blocked = false;
+
+        // Camada 1: localStorage (persiste entre refreshes no mesmo navegador)
+        const localKey = `traxbook_upload_${user.id}`;
         try {
-          const { data: freshProfile, error: profileErr } = await supabase
-            .from('profiles')
-            .select('last_upload_at, last_upload_id')
-            .eq('id', user.id)
-            .single();
-
-          if (!profileErr && freshProfile) {
-            const lastUpload = freshProfile.last_upload_at;
-            const lastUploadId = freshProfile.last_upload_id;
-
-            if (lastUpload) {
-              const lastDate = new Date(lastUpload);
-              const sevenDaysAgo = new Date();
-              sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-              if (lastDate > sevenDaysAgo && lastUploadId !== id) {
-                setLoading(false);
-                alert('Free accounts can only upload 1 new file every 7 days. You can only re-upload the same file. Upgrade to Premium for infinite uploads!');
-                return;
-              }
+          const localData = JSON.parse(localStorage.getItem(localKey) || 'null');
+          if (localData && localData.timestamp) {
+            const elapsed = Date.now() - localData.timestamp;
+            if (elapsed < SEVEN_DAYS_MS && localData.bookId !== id) {
+              blocked = true;
             }
           }
-        } catch (checkErr) {
-          console.warn('Could not verify upload limit, blocking upload as precaution:', checkErr);
+        } catch (_) { /* localStorage parse error, ignore */ }
+
+        // Camada 2: Supabase (persiste entre dispositivos/navegadores)
+        if (!blocked) {
+          try {
+            const { data: freshProfile } = await supabase
+              .from('profiles')
+              .select('last_upload_at, last_upload_id')
+              .eq('id', user.id)
+              .single();
+
+            if (freshProfile && freshProfile.last_upload_at) {
+              const elapsed = Date.now() - new Date(freshProfile.last_upload_at).getTime();
+              if (elapsed < SEVEN_DAYS_MS && freshProfile.last_upload_id !== id) {
+                blocked = true;
+              }
+            }
+          } catch (_) {
+            // Se a consulta falhar (coluna não existe, rede, etc.), confiar no localStorage
+            console.warn('Supabase upload check failed, relying on localStorage only.');
+          }
+        }
+
+        if (blocked) {
           setLoading(false);
-          alert('Could not verify your upload limit. Please try again in a moment.');
+          setShowUpgradeModal(true);
           return;
         }
       }
 
       await applyBookState(id, meta, chs);
 
-      // Update last upload date & ID for logged users
+      // Registrar upload para usuários gratuitos (dupla camada)
       if (user && !isPremium) {
         const timestamp = new Date().toISOString();
-        const { error: updateErr } = await supabase
-          .from('profiles')
-          .update({ last_upload_at: timestamp, last_upload_id: id })
-          .eq('id', user.id);
 
-        if (updateErr) {
-          console.error('Failed to update upload tracking:', updateErr);
+        // Salvar no localStorage (imediato, sobrevive a refresh)
+        const localKey = `traxbook_upload_${user.id}`;
+        localStorage.setItem(localKey, JSON.stringify({ timestamp: Date.now(), bookId: id }));
+
+        // Salvar no Supabase (cross-device)
+        try {
+          await supabase
+            .from('profiles')
+            .update({ last_upload_at: timestamp, last_upload_id: id })
+            .eq('id', user.id);
+        } catch (_) {
+          console.warn('Could not save upload tracking to Supabase.');
         }
 
         setProfile(prev => prev ? { ...prev, last_upload_at: timestamp, last_upload_id: id } : prev);
