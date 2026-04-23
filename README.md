@@ -17,14 +17,16 @@ Os seguintes recursos são exclusivos para assinantes **Traxbook Premium**:
 *   **Traxbook Drive**: Sincronização automática e silenciosa na nuvem.
 *   **Multi-device Sync**: Acesse suas traduções de qualquer dispositivo.
 *   **Anki Integration**: Exportação de flashcards para o formato Anki (CSV).
-*   **Desconto no Marketplace**: 20% de desconto em todos os livros da biblioteca pública.
-*   **Combo de Acesso**: Ofertas especiais para pacotes de livros clássicos.
+*   **Desconto no Marketplace**: 20% de desconto em todos os livros da biblioteca.
 
-### 3. Integridade e Exportação
+### 3. Compra e uso de créditos
+O usuário logado poderá comprar créditos e cada crédito corresponderá a um livro que ele poderá fazer upload. O livro que ele fizer upload ficará armazenado por 15 dias ou pelo tempo em que ele for premium.
+
+### 4. Integridade e Exportação
 *   **Assinatura de Tradução**: Todo arquivo EPUB exportado contém uma assinatura obrigatória: *"Translated by [Email] via Traxbook"*.
 *   **Privacidade**: Traduções salvas na nuvem são privadas e vinculadas à conta do usuário.
 
-### 4. Pagamentos
+### 5. Pagamentos
 *   A plataforma utiliza **Stripe Payment Links** para transações seguras.
 *   Assinaturas são processadas mensalmente e podem ser canceladas a qualquer momento via portal do cliente (em implementação).
 

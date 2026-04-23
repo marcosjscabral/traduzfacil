@@ -905,20 +905,36 @@ const App = () => {
       const id = btoa(unescape(encodeURIComponent(meta.title + '||' + meta.creator))).replace(/[^a-zA-Z0-9]/g, '');
 
       // MANIFESTO: Pessoas logadas: Upload 1 arquivo / 7 days (ou mesmo ID)
+      // Consulta o banco de dados DIRETAMENTE para evitar burlar com refresh
       if (user && !isPremium) {
-        const lastUpload = profile?.last_upload_at;
-        const lastUploadId = profile?.last_upload_id;
+        try {
+          const { data: freshProfile, error: profileErr } = await supabase
+            .from('profiles')
+            .select('last_upload_at, last_upload_id')
+            .eq('id', user.id)
+            .single();
 
-        if (lastUpload) {
-          const lastDate = new Date(lastUpload);
-          const sevenDaysAgo = new Date();
-          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          if (!profileErr && freshProfile) {
+            const lastUpload = freshProfile.last_upload_at;
+            const lastUploadId = freshProfile.last_upload_id;
 
-          if (lastDate > sevenDaysAgo && lastUploadId !== id) {
-            setLoading(false);
-            alert('Free accounts can only upload 1 new file every 7 days. You can only re-upload the same file. Upgrade to Premium for infinite uploads!');
-            return;
+            if (lastUpload) {
+              const lastDate = new Date(lastUpload);
+              const sevenDaysAgo = new Date();
+              sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+              if (lastDate > sevenDaysAgo && lastUploadId !== id) {
+                setLoading(false);
+                alert('Free accounts can only upload 1 new file every 7 days. You can only re-upload the same file. Upgrade to Premium for infinite uploads!');
+                return;
+              }
+            }
           }
+        } catch (checkErr) {
+          console.warn('Could not verify upload limit, blocking upload as precaution:', checkErr);
+          setLoading(false);
+          alert('Could not verify your upload limit. Please try again in a moment.');
+          return;
         }
       }
 
@@ -927,10 +943,14 @@ const App = () => {
       // Update last upload date & ID for logged users
       if (user && !isPremium) {
         const timestamp = new Date().toISOString();
-        await supabase
+        const { error: updateErr } = await supabase
           .from('profiles')
           .update({ last_upload_at: timestamp, last_upload_id: id })
           .eq('id', user.id);
+
+        if (updateErr) {
+          console.error('Failed to update upload tracking:', updateErr);
+        }
 
         setProfile(prev => prev ? { ...prev, last_upload_at: timestamp, last_upload_id: id } : prev);
       }
@@ -940,7 +960,7 @@ const App = () => {
     } finally {
       setLoading(false);
     }
-  }, [applyBookState, user, isPremium, profile, setProfile]);
+  }, [applyBookState, user, isPremium]);
 
   /* ─── Manual Save Logic ─── */
   const chaptersRef = useRef(chapters);

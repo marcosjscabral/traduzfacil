@@ -8,6 +8,7 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS premium_since TIMESTAMPTZ;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_upload_id TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_upload_at TIMESTAMPTZ;
 
 -- ─── 2. Colunas novas na tabela catalog ───
 ALTER TABLE catalog ADD COLUMN IF NOT EXISTS stripe_price_id TEXT;
