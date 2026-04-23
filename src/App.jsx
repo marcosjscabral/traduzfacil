@@ -1292,17 +1292,23 @@ const App = () => {
     try {
       let stripeData = null;
 
-      // If not free and no stripe_price_id provided, create Stripe product automatically
+      // If the book is paid and no stripe_price_id was provided manually, create everything in Stripe
       if (!adminNewBook.free && !adminNewBook.stripe_price_id && adminNewBook.price_cents > 0) {
         try {
-          alert('Creating Stripe product...');
           stripeData = await callStripeAdmin('create_product', {
             title: adminNewBook.title,
             price_cents: adminNewBook.price_cents,
           });
-          alert('✅ Stripe product created successfully!');
+          // Dynamically register the new payment link so it works immediately without deploy
+          if (stripeData?.stripe_price_id && stripeData?.stripe_payment_link) {
+            STRIPE_PAYMENT_LINKS[stripeData.stripe_price_id] = stripeData.stripe_payment_link;
+          }
         } catch (stripeError) {
-          alert('Failed to create Stripe product: ' + stripeError.message + '\n\nYou can still add the book and configure Stripe manually later.');
+          const proceed = confirm(
+            'Failed to create Stripe product: ' + stripeError.message +
+            '\n\nDo you want to add the book anyway without Stripe? You can configure Stripe later from the Edit modal.'
+          );
+          if (!proceed) return;
         }
       }
 
@@ -1316,19 +1322,15 @@ const App = () => {
         premium_only: adminNewBook.premium_only || false,
         price_cents: adminNewBook.price_cents || 0,
         stripe_price_id: stripeData?.stripe_price_id || adminNewBook.stripe_price_id || null,
+        stripe_product_id: stripeData?.stripe_product_id || null,
         stripe_payment_link: stripeData?.stripe_payment_link || adminNewBook.stripe_payment_link || null,
         Language: adminNewBook.Language || 'English',
       };
 
-      // Add stripe_product_id if available
-      if (stripeData?.stripe_product_id) {
-        fullPayload.stripe_product_id = stripeData.stripe_product_id;
-      }
-
-      let { error } = await supabase.from('catalog').insert([fullPayload]);
+      const { error } = await supabase.from('catalog').insert([fullPayload]);
 
       if (error) {
-        // Retry without stripe fields
+        // Retry without stripe fields if columns are missing
         console.warn('Full insert failed, retrying without stripe fields:', error.message);
         const basicPayload = {
           title: adminNewBook.title,
@@ -1345,7 +1347,12 @@ const App = () => {
 
       setAdminNewBook({ title: '', author: '', difficulty: 'Beginner', epub_url: '', cover_url: '', free: true, premium_only: false, price_cents: 0, stripe_price_id: '', stripe_payment_link: '', Language: 'English' });
       fetchAdminCatalog();
-      alert('✅ Book added to catalog!');
+
+      if (stripeData) {
+        alert(`✅ Book added!\n\nStripe product created automatically:\n• Product: ${stripeData.stripe_product_id}\n• Price: ${stripeData.stripe_price_id}\n• Link: Ready to use`);
+      } else {
+        alert('✅ Book added to catalog!');
+      }
     } catch (e) {
       alert('Error adding book: ' + e.message);
     }
@@ -1929,12 +1936,25 @@ const App = () => {
                                     title: adminEditingBook.title,
                                     price_cents: adminEditingBook.price_cents,
                                   });
+                                  // Register in runtime map
+                                  if (stripeData?.stripe_price_id && stripeData?.stripe_payment_link) {
+                                    STRIPE_PAYMENT_LINKS[stripeData.stripe_price_id] = stripeData.stripe_payment_link;
+                                  }
                                   setAdminEditingBook(prev => ({
                                     ...prev,
+                                    stripe_product_id: stripeData.stripe_product_id,
                                     stripe_price_id: stripeData.stripe_price_id,
                                     stripe_payment_link: stripeData.stripe_payment_link,
                                   }));
-                                  alert('✅ Stripe product created successfully!');
+                                  // Auto-save Stripe fields to Supabase
+                                  try {
+                                    await supabase.from('catalog').update({
+                                      stripe_product_id: stripeData.stripe_product_id,
+                                      stripe_price_id: stripeData.stripe_price_id,
+                                      stripe_payment_link: stripeData.stripe_payment_link,
+                                    }).eq('id', adminEditingBook.id);
+                                  } catch (_) { /* will be saved on "Save Changes" */ }
+                                  alert('✅ Stripe product created and saved!\n\nProduct: ' + stripeData.stripe_product_id + '\nPrice: ' + stripeData.stripe_price_id);
                                 } catch (error) {
                                   alert('Failed to create Stripe product: ' + error.message);
                                 }
@@ -1950,7 +1970,7 @@ const App = () => {
                             </a>
                           </div>
                           <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0' }}>
-                            <strong>Auto-create:</strong> Creates product, price, and payment link automatically.<br />
+                            <strong>Auto-create:</strong> Creates product, price, and payment link in Stripe + saves to catalog automatically.<br />
                             <strong>Manual:</strong> Go to Stripe Dashboard to create manually.
                           </p>
                         </div>
@@ -1968,16 +1988,27 @@ const App = () => {
                               }
                               try {
                                 const stripeData = await callStripeAdmin('update_price', {
-                                  stripe_product_id: adminEditingBook.stripe_product_id || adminEditingBook.stripe_price_id?.replace('price_', 'prod_'), // fallback
+                                  stripe_product_id: adminEditingBook.stripe_product_id || adminEditingBook.stripe_price_id?.replace('price_', 'prod_'),
                                   stripe_price_id_old: adminEditingBook.stripe_price_id,
                                   price_cents: adminEditingBook.price_cents,
                                 });
+                                // Register in runtime map
+                                if (stripeData?.stripe_price_id && stripeData?.stripe_payment_link) {
+                                  STRIPE_PAYMENT_LINKS[stripeData.stripe_price_id] = stripeData.stripe_payment_link;
+                                }
                                 setAdminEditingBook(prev => ({
                                   ...prev,
                                   stripe_price_id: stripeData.stripe_price_id,
                                   stripe_payment_link: stripeData.stripe_payment_link,
                                 }));
-                                alert('✅ Stripe price updated successfully!');
+                                // Auto-save updated Stripe fields to Supabase
+                                try {
+                                  await supabase.from('catalog').update({
+                                    stripe_price_id: stripeData.stripe_price_id,
+                                    stripe_payment_link: stripeData.stripe_payment_link,
+                                  }).eq('id', adminEditingBook.id);
+                                } catch (_) { /* will be saved on "Save Changes" */ }
+                                alert('✅ Stripe price updated and saved!');
                               } catch (error) {
                                 alert('Failed to update Stripe price: ' + error.message);
                               }
