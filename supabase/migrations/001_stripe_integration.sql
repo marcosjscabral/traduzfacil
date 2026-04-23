@@ -47,6 +47,14 @@ UPDATE catalog
 SET stripe_payment_link = 'https://buy.stripe.com/14A8wPgmagdIgyA8pQcwg02'
 WHERE stripe_price_id = 'price_1TOIaIF0lxCQwtFq9YDWh6dz';
 
+UPDATE catalog 
+SET stripe_payment_link = 'https://buy.stripe.com/5kQ14n0nc9Pk5TW9tUcwg05'
+WHERE stripe_price_id = 'price_1TOLTwF0lxCQwtFqCD8vs4Z8';
+
+UPDATE catalog 
+SET stripe_payment_link = 'https://buy.stripe.com/bJe9ATee25z40zC0Xocwg04'
+WHERE stripe_price_id = 'price_1TOLYkF0lxCQwtFq2CwVM2XR';
+
 -- ─── 5. Verificar resultado ───
 SELECT column_name, data_type 
 FROM information_schema.columns 

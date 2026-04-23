@@ -142,6 +142,8 @@ const STRIPE_PAYMENT_LINKS = {
   'price_1TOIaIF0lxCQwtFqj99VXrl0': 'https://buy.stripe.com/5kQ00j4DsaTodmo35wcwg01',  // Dracula
   'price_1TOIaIF0lxCQwtFq9YDWh6dz': 'https://buy.stripe.com/14A8wPgmagdIgyA8pQcwg02',  // Sherlock Holmes
   'price_1TOIaQF0lxCQwtFqiDtYDNU8': 'https://buy.stripe.com/6oUfZhc5U8Lgeqs21scwg03',  // Access Combo
+  'price_1TOLTwF0lxCQwtFqCD8vs4Z8': 'https://buy.stripe.com/5kQ14n0nc9Pk5TW9tUcwg05',  // Moby Dick
+  'price_1TOLYkF0lxCQwtFq2CwVM2XR': 'https://buy.stripe.com/bJe9ATee25z40zC0Xocwg04',  // Jesus the Christ
 };
 
 // Helper: resolve the correct payment link for a book or plan
