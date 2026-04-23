@@ -10,6 +10,7 @@ Este manifesto define as regras de acesso, fair use e monetização da plataform
 *   **Apenas .epub**: O sistema aceita exclusivamente arquivos no formato EPUB.
 *   **Autenticação Obrigatória**: Pessoas não logadas **não podem** fazer upload de arquivos.
 *   **Fair Use (Usuários Gratuitos)**: Usuários logados no plano gratuito podem fazer upload de **1 arquivo a cada 7 dias**.
+            Se o usuário gratuito tentar fazer mais de um upload, abrirá um popup orientando ele a comprar créditos ou se tornar premium. Não é para deixar o usuário gratuito fazer mais de um upload dentro desses 7 dias e após os 7 dias será possível fazer mais um upload apenas e assim sucessivamente. - não importa se ele atualizar a página ou fazer o login em outro computador, aquele usuário não poderá fazer o upload no prazo estipulado ou enquanto não colocar créditos ou se tornar premium.
 *   **Usuários Premium**: Uploads ilimitados e sem restrição de tempo.
 
 ### 2. Recursos Premium (Gating)
