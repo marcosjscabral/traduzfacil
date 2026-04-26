@@ -2481,9 +2481,6 @@ const App = () => {
                                 <div className="fc-content">
                                   <div className="fc-source">{card.source_text}</div>
                                 </div>
-                                <div className="fc-actions" style={{ opacity: 0.3 }}>
-                                  <span style={{ fontSize: '12px', textAlign: 'center', width: '100%' }}>Click to flip</span>
-                                </div>
                               </div>
                               <div className="fc-back">
                                 <div className="fc-content">
@@ -2698,9 +2695,9 @@ const App = () => {
                   {myFlashcards.map((fc, i) => (
                     <div 
                       key={fc.id || i} 
-                      className={`fc-card glass ${flippedCardIds.includes(fc.id) ? 'flipped' : ''}`}
+                      className={`fc-card ${flippedCardIds.includes(fc.id) ? 'flipped' : ''}`}
                       onClick={() => setFlippedCardIds(prev => prev.includes(fc.id) ? prev.filter(id => id !== fc.id) : [...prev, fc.id])}
-                      style={{ padding: '12px', minHeight: '100px' }}
+                      style={{ minHeight: '100px' }}
                     >
                       <div className="fc-inner">
                         {editingCard?.id === fc.id ? (
@@ -2735,9 +2732,6 @@ const App = () => {
                               <div className="fc-content">
                                 <div className="fc-source" style={{ fontSize: '14px' }}>{fc.source_text}</div>
                               </div>
-                              <div className="fc-actions" style={{ opacity: 0.3 }}>
-                                <span style={{ fontSize: '10px', textAlign: 'center', width: '100%' }}>Click to flip</span>
-                              </div>
                             </div>
                             <div className="fc-back">
                               {fc.location_info && (
@@ -2748,7 +2742,7 @@ const App = () => {
                               <div className="fc-content">
                                 <div className="fc-translation" style={{ fontSize: '14px' }}>{fc.translated_text}</div>
                               </div>
-                              <div className="fc-actions" style={{ right: '8px' }}>
+                              <div className="fc-actions" style={{ right: '8px', bottom: '6px' }}>
                                 <button className="btn btn-ghost btn-sm" style={{ padding: '2px 4px' }} onClick={(e) => { e.stopPropagation(); setEditingCard(fc); }} title="Edit"><Icons.Edit size={14} /></button>
                                 <button className="btn btn-ghost btn-sm" style={{ color: '#ef4444', padding: '2px 4px' }} onClick={(e) => {
                                   e.stopPropagation();
