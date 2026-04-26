@@ -2312,6 +2312,32 @@ const App = () => {
                                 <Icons.Lock /> Premium
                               </div>
                             )}
+                            {isAdmin && !isUnlocked && (
+                              <button 
+                                className="btn btn-secondary"
+                                style={{ position: 'absolute', bottom: '8px', left: '8px', fontSize: '10px', padding: '4px 8px', zIndex: 10 }}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!user) return;
+                                  try {
+                                    const { error } = await supabase.from('purchases').insert({ 
+                                      user_id: user.id, 
+                                      book_id: book.id, 
+                                      status: 'completed',
+                                      amount_total: book.price_cents || 0,
+                                      currency: 'brl'
+                                    });
+                                    if (error) throw error;
+                                    setPurchasedBookIds([...purchasedBookIds, book.id]);
+                                    alert('✅ Compra simulada com sucesso!');
+                                  } catch (err) {
+                                    alert('Erro ao simular compra: ' + err.message);
+                                  }
+                                }}
+                              >
+                                🧪 Mock Buy
+                              </button>
+                            )}
                           </div>
                           <div className="mk-info">
                             <div className="mk-meta-row">
