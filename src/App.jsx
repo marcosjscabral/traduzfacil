@@ -1633,7 +1633,7 @@ const App = () => {
             <div className="guide-content">
               <h1>📘 User Guide: <span className="wavy-underline">Traxbook</span></h1>
               <p className="guide-subtitle">Transforming your reading into active learning.</p>
-              
+
               <p className="guide-intro">
                 Welcome to <strong>Traxbook</strong>! This quick guide will help you navigate our platform and understand how to get the most out of your translation and study sessions.
               </p>
@@ -1675,7 +1675,7 @@ const App = () => {
                   <li><strong><span className="traxbook-tag">Traxbook</span> Drive:</strong> Automatic cloud synchronization. Start on your PC and continue on your tablet exactly where you left off.</li>
                   <li><strong>Unlimited Flashcards:</strong> Create as many flashcards as you want.</li>
                   <li><strong>Anki Integration:</strong> Export your flashcards in CSV format to practice in Anki.</li>
-                  <li><strong>Full Export:</strong> Download your translated book in EPUB format.<br/><span style={{fontSize: '0.9em', fontStyle: 'italic', color: 'var(--text-dim)'}}>Note: Every exported file includes the signature "Translated by [Email] via <span className="traxbook-tag">Traxbook</span>" to ensure authorship of your effort.</span></li>
+                  <li><strong>Full Export:</strong> Download your translated book in EPUB format.<br /><span style={{ fontSize: '0.9em', fontStyle: 'italic', color: 'var(--text-dim)' }}>Note: Every exported file includes the signature "Translated by [Email] via <span className="traxbook-tag">Traxbook</span>" to ensure authorship of your effort.</span></li>
                   <li><strong>Marketplace:</strong> Get a <strong>20% discount</strong> on all books in our classics library.</li>
                 </ul>
               </div>
@@ -1703,7 +1703,7 @@ const App = () => {
               </div>
 
               <div className="guide-footer">
-                <p>Questions or need support? Contact us through our customer portal.</p>
+                <p>Do you have any questions or need help? Contact us through our customer email: traxbookepub@gmail.com</p>
               </div>
             </div>
           </section>
