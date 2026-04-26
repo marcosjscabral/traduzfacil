@@ -1596,7 +1596,7 @@ const App = () => {
                 </button>
               )}
               <button className="btn btn-ghost" onClick={() => { setCurrentView('guide'); setMobileMenuOpen(false); }} title="User Guide">
-                <Icons.Book /> Guia
+                <Icons.Book /> Info
               </button>
               {user ? (
                 <div className="user-menu">
@@ -1631,79 +1631,79 @@ const App = () => {
               <Icons.ArrowLeft /> Back
             </button>
             <div className="guide-content">
-              <h1>📘 Guia do Usuário: <span className="wavy-underline">Traxbook</span></h1>
-              <p className="guide-subtitle">Transformando sua leitura em aprendizado ativo.</p>
+              <h1>📘 User Guide: <span className="wavy-underline">Traxbook</span></h1>
+              <p className="guide-subtitle">Transforming your reading into active learning.</p>
               
               <p className="guide-intro">
-                Bem-vindo ao <strong>Traxbook</strong>! Este guia rápido ajudará você a navegar pela nossa plataforma e entender como tirar o máximo proveito das suas sessões de tradução e estudo.
+                Welcome to <strong>Traxbook</strong>! This quick guide will help you navigate our platform and understand how to get the most out of your translation and study sessions.
               </p>
 
               <hr className="guide-divider" />
 
               <div className="guide-section-block">
-                <h2>🚀 Começando sua Tradução</h2>
-                <p>Para garantir a melhor experiência, siga estas diretrizes de upload:</p>
+                <h2>🚀 Starting Your Translation</h2>
+                <p>To ensure the best experience, follow these upload guidelines:</p>
                 <ul>
-                  <li><strong>Formato Único:</strong> O <span className="traxbook-tag">Traxbook</span> processa exclusivamente arquivos <strong>.epub</strong>.</li>
-                  <li><strong>Acesso:</strong> O upload é liberado apenas para usuários logados.</li>
-                  <li><strong>Frequência:</strong> Você pode subir <strong>livros à vontade</strong>. As traduções ficam salvas no cache do seu navegador.</li>
+                  <li><strong>Single Format:</strong> <span className="traxbook-tag">Traxbook</span> exclusively processes <strong>.epub</strong> files.</li>
+                  <li><strong>Access:</strong> Uploading is available only for logged-in users.</li>
+                  <li><strong>Frequency:</strong> You can upload <strong>unlimited books</strong>. Translations are saved in your browser's cache.</li>
                 </ul>
               </div>
 
               <hr className="guide-divider" />
 
               <div className="guide-section-block">
-                <h2>✍️ Como Traduzir e Estudar</h2>
-                <p>O <span className="traxbook-tag">Traxbook</span> organiza o texto original parágrafo por parágrafo, criando um campo de resposta logo abaixo para sua prática.</p>
+                <h2>✍️ How to Translate and Study</h2>
+                <p><span className="traxbook-tag">Traxbook</span> organizes the original text paragraph by paragraph, creating a response field right below it for your practice.</p>
               </div>
 
               <div className="guide-section-block">
-                <h2>🗂️ Sistema de Flashcards</h2>
-                <p>Encontrou uma palavra nova ou expressão difícil?</p>
+                <h2>🗂️ Flashcards System</h2>
+                <p>Found a new word or a difficult expression?</p>
                 <ul>
-                  <li><strong>Salve para revisar:</strong> Usuários logados podem criar flashcards durante a tradução.</li>
-                  <li><strong>Limite Free:</strong> Salve até <strong>20 flashcards</strong> para reforçar seu vocabulário.</li>
+                  <li><strong>Save for review:</strong> Logged-in users can create flashcards during translation.</li>
+                  <li><strong>Free Limit:</strong> Save up to <strong>20 flashcards</strong> to reinforce your vocabulary.</li>
                 </ul>
               </div>
 
               <hr className="guide-divider" />
 
               <div className="guide-section-block">
-                <h2>⭐ Vantagens do Plano Premium</h2>
-                <p>Leve seus estudos para o próximo nível com recursos exclusivos:</p>
+                <h2>⭐ Premium Plan Advantages</h2>
+                <p>Take your studies to the next level with exclusive features:</p>
                 <ul>
-                  <li><strong><span className="traxbook-tag">Traxbook</span> Drive:</strong> Sincronização automática na nuvem. Comece no PC e continue no tablet exatamente de onde parou.</li>
-                  <li><strong>Flash Cards ilimitados:</strong> crie quantos flash cards quiser.</li>
-                  <li><strong>Integração com Anki:</strong> Exporte seus flashcards em formato CSV para praticar no Anki.</li>
-                  <li><strong>Exportação Completa:</strong> Baixe o seu livro traduzido em formato EPUB.<br/><span style={{fontSize: '0.9em', fontStyle: 'italic', color: 'var(--text-dim)'}}>Nota: Todo arquivo exportado inclui a assinatura "Translated by [Email] via <span className="traxbook-tag" style={{textDecorationColor: 'gray', textDecorationStyle: 'wavy'}}>Traxbook</span>" para garantir a autoria do seu esforço.</span></li>
-                  <li><strong>Marketplace:</strong> Ganhe <strong>20% de desconto</strong> em todos os livros da nossa biblioteca de clássicos.</li>
+                  <li><strong><span className="traxbook-tag">Traxbook</span> Drive:</strong> Automatic cloud synchronization. Start on your PC and continue on your tablet exactly where you left off.</li>
+                  <li><strong>Unlimited Flashcards:</strong> Create as many flashcards as you want.</li>
+                  <li><strong>Anki Integration:</strong> Export your flashcards in CSV format to practice in Anki.</li>
+                  <li><strong>Full Export:</strong> Download your translated book in EPUB format.<br/><span style={{fontSize: '0.9em', fontStyle: 'italic', color: 'var(--text-dim)'}}>Note: Every exported file includes the signature "Translated by [Email] via <span className="traxbook-tag">Traxbook</span>" to ensure authorship of your effort.</span></li>
+                  <li><strong>Marketplace:</strong> Get a <strong>20% discount</strong> on all books in our classics library.</li>
                 </ul>
               </div>
 
               <hr className="guide-divider" />
 
               <div className="guide-section-block">
-                <h2>💳 Assinatura e Pagamentos</h2>
-                <p>Gerenciamos tudo de forma simples e segura:</p>
+                <h2>💳 Subscription and Payments</h2>
+                <p>We manage everything simply and securely:</p>
                 <ul>
-                  <li><strong>Segurança:</strong> Processamos pagamentos via <strong>Stripe</strong>.</li>
-                  <li><strong>Flexibilidade:</strong> Assinaturas mensais que podem ser canceladas a qualquer momento pelo seu painel de controle.</li>
+                  <li><strong>Security:</strong> We process payments via <strong>Stripe</strong>.</li>
+                  <li><strong>Flexibility:</strong> Monthly subscriptions that can be canceled at any time from your dashboard.</li>
                 </ul>
               </div>
 
               <hr className="guide-divider" />
 
               <div className="guide-section-block">
-                <h2>💡 Dicas para um Melhor Aprendizado</h2>
+                <h2>💡 Tips for Better Learning</h2>
                 <ol>
-                  <li><strong>Consistência é chave:</strong> Tente traduzir ao menos 5 parágrafos por dia.</li>
-                  <li><strong>Use os Flashcards:</strong> Não salve apenas palavras soltas; salve frases curtas para entender o contexto.</li>
-                  <li><strong>Sincronize:</strong> Se você estuda em trânsito, o plano Premium garante que seu progresso nunca se perca entre dispositivos.</li>
+                  <li><strong>Consistency is key:</strong> Try to translate at least 5 paragraphs a day.</li>
+                  <li><strong>Use Flashcards:</strong> Don't just save isolated words; save short sentences to understand the context.</li>
+                  <li><strong>Synchronize:</strong> If you study on the go, the Premium plan ensures your progress is never lost between devices.</li>
                 </ol>
               </div>
 
               <div className="guide-footer">
-                <p>Dúvidas ou suporte? Entre em contato através do nosso portal do cliente.</p>
+                <p>Questions or need support? Contact us through our customer portal.</p>
               </div>
             </div>
           </section>

@@ -1674,9 +1674,7 @@ body {
 }
 
 .guide-content h1 .wavy-underline {
-  text-decoration: underline;
-  text-decoration-style: wavy;
-  text-decoration-color: #ef4444; /* red wavy */
+  color: var(--accent);
 }
 
 .guide-subtitle {
@@ -1747,7 +1745,6 @@ body {
 
 .traxbook-tag {
   color: var(--text-secondary);
-  text-decoration: underline wavy #ef4444;
   font-weight: 600;
 }
 
