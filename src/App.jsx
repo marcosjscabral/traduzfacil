@@ -2152,38 +2152,6 @@ const App = () => {
                 </div>
 
                 <div className="marketplace-grid">
-                  {/* MANIFESTO: Access Combos */}
-                  {activeHomeTab === 'marketplace' && !isPremium && (
-                    <div className="mk-card combo-card" style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)', color: 'white' }}>
-                      <div className="mk-info" style={{ height: '100%', justifyContent: 'center', padding: '2rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem', background: 'rgba(255,255,255,0.2)', padding: '4px 12px', borderRadius: '20px', width: 'fit-content' }}>
-                          <Icons.Zap /> Access Combo
-                        </div>
-                        <h4 style={{ color: 'white', fontSize: '1.4rem' }}>Classical Literature Pack</h4>
-                        <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '1.5rem' }}>Dracula + Sherlock Holmes + Moby Dick</p>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>$12.00</div>
-                        <button
-                          className="btn btn-primary"
-                          style={{ background: 'white', color: '#4f46e5', border: 'none', transition: 'all 0.2s ease' }}
-                          onClick={(e) => {
-                            const btn = e.currentTarget;
-                            if (!user) {
-                              setShowAuthModal(true);
-                            } else {
-                              btn.style.background = '#10b981';
-                              btn.style.color = '#fff';
-                              btn.textContent = 'Redirecting...';
-                              setTimeout(() => {
-                                window.location.href = getPaymentLink('price_1TOIaQF0lxCQwtFqiDtYDNU8', null, user.id);
-                              }, 400);
-                            }
-                          }}
-                        >
-                          Buy Combo — $12.00
-                        </button>
-                      </div>
-                    </div>
-                  )}
 
                   {catalogError ? (
                     <div style={{ gridColumn: '1 / -1', color: '#ff4d4f', padding: '1rem', background: '#ffe6e6', borderRadius: '8px' }}>
