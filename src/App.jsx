@@ -576,7 +576,7 @@ const App = () => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '', success: false, originId: null });
+  const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '', success: false, originId: null, locationInfo: '' });
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null, confirmText: 'Confirm' });
   const [cloudBooks, setCloudBooks] = useState([]);
 
@@ -1189,7 +1189,7 @@ const App = () => {
     if (document.activeElement?.tagName === 'TEXTAREA' || document.activeElement?.tagName === 'INPUT') return;
     const text = selection.toString().trim();
     if (text.length > 0) {
-      setFlashcardModal({ show: true, source: text, translation: '', success: false });
+      setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: null, locationInfo: '' });
     }
   }, [user]);
 
@@ -1207,7 +1207,7 @@ const App = () => {
     }
     // MANIFESTO: Plano gratuito pode salvar até 20 flashcards
     if (!isPremium && myFlashcards.length >= FREE_FLASHCARD_LIMIT) {
-      setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null });
+      setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null, locationInfo: '' });
       setShowUpgradeModal(true);
       return;
     }
@@ -1216,7 +1216,8 @@ const App = () => {
         user_id: user.id,
         source_text: flashcardModal.source,
         translated_text: flashcardModal.translation,
-        origin_id: flashcardModal.originId
+        origin_id: flashcardModal.originId,
+        location_info: flashcardModal.locationInfo
       }]).select();
       if (error) {
         if (error.code === '42P01') throw new Error("The 'flashcards' table doesn't exist yet on Supabase. Please create it!");
@@ -1227,7 +1228,7 @@ const App = () => {
       }
       setFlashcardModal(p => ({ ...p, success: true }));
       setTimeout(() => {
-        setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null });
+        setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null, locationInfo: '' });
         window.getSelection()?.removeAllRanges();
       }, 1500);
     } catch (err) {
@@ -2480,7 +2481,7 @@ const App = () => {
                                 <div className="fc-content">
                                   <div className="fc-source">{card.source_text}</div>
                                 </div>
-                                <div className="fc-actions" style={{ marginTop: 'auto', opacity: 0.3 }}>
+                                <div className="fc-actions" style={{ opacity: 0.3 }}>
                                   <span style={{ fontSize: '12px', textAlign: 'center', width: '100%' }}>Click to flip</span>
                                 </div>
                               </div>
@@ -2642,7 +2643,7 @@ const App = () => {
                         paragraph={p}
                         flashcards={myFlashcards}
                         onTranslationChange={(val) => handleTranslationChange(currentChapter, pi, val)}
-                        onSelect={(text) => setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: p.id })}
+                        onSelect={(text) => setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: p.id, locationInfo: `[${chapters[currentChapter]?.chapterLabel}]` })}
                       />
                     ))}
                   </React.Fragment>
@@ -2693,11 +2694,85 @@ const App = () => {
                   <p style={{ marginTop: '4px', fontSize: '11px' }}>Select text while reading to create one.</p>
                 </div>
               ) : (
-                <div className="flashcards-mini-list">
+                <div className="flashcards-mini-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {myFlashcards.map((fc, i) => (
-                    <div key={i} className="flashcard-mini-card">
-                      <strong>{fc.source_text}</strong>
-                      <span>{fc.translated_text}</span>
+                    <div 
+                      key={fc.id || i} 
+                      className={`fc-card glass ${flippedCardIds.includes(fc.id) ? 'flipped' : ''}`}
+                      onClick={() => setFlippedCardIds(prev => prev.includes(fc.id) ? prev.filter(id => id !== fc.id) : [...prev, fc.id])}
+                      style={{ padding: '12px', minHeight: '100px' }}
+                    >
+                      <div className="fc-inner">
+                        {editingCard?.id === fc.id ? (
+                          <div className="fc-editor-wrapper" onClick={e => e.stopPropagation()} style={{ padding: '8px' }}>
+                            <div className="fc-editor">
+                              <input 
+                                value={editingCard.source_text} 
+                                onChange={e => setEditingCard(p => ({...p, source_text: e.target.value}))}
+                                placeholder="Source text"
+                                className="fc-editor-input"
+                              />
+                              <textarea 
+                                value={editingCard.translated_text} 
+                                onChange={e => setEditingCard(p => ({...p, translated_text: e.target.value}))}
+                                placeholder="Translation"
+                                className="fc-editor-input fc-editor-textarea"
+                              />
+                              <div className="fc-editor-actions">
+                                <button className="btn btn-ghost btn-sm" onClick={() => setEditingCard(null)}>Cancel</button>
+                                <button className="btn btn-primary btn-sm" onClick={handleSaveEditFlashcard}><Icons.Check size={14} /> Save</button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="fc-front">
+                              {fc.location_info && (
+                                <div style={{ position: 'absolute', top: '8px', right: '8px', fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                                  {fc.location_info}
+                                </div>
+                              )}
+                              <div className="fc-content">
+                                <div className="fc-source" style={{ fontSize: '14px' }}>{fc.source_text}</div>
+                              </div>
+                              <div className="fc-actions" style={{ opacity: 0.3 }}>
+                                <span style={{ fontSize: '10px', textAlign: 'center', width: '100%' }}>Click to flip</span>
+                              </div>
+                            </div>
+                            <div className="fc-back">
+                              {fc.location_info && (
+                                <div style={{ position: 'absolute', top: '8px', right: '8px', fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                                  {fc.location_info}
+                                </div>
+                              )}
+                              <div className="fc-content">
+                                <div className="fc-translation" style={{ fontSize: '14px' }}>{fc.translated_text}</div>
+                              </div>
+                              <div className="fc-actions" style={{ right: '8px' }}>
+                                <button className="btn btn-ghost btn-sm" style={{ padding: '2px 4px' }} onClick={(e) => { e.stopPropagation(); setEditingCard(fc); }} title="Edit"><Icons.Edit size={14} /></button>
+                                <button className="btn btn-ghost btn-sm" style={{ color: '#ef4444', padding: '2px 4px' }} onClick={(e) => {
+                                  e.stopPropagation();
+                                  setConfirmModal({
+                                    show: true,
+                                    title: 'Delete Card?',
+                                    message: 'Are you sure you want to remove this flashcard?',
+                                    confirmText: 'Delete',
+                                    onConfirm: async () => {
+                                      try {
+                                        const { error } = await supabase.from('flashcards').delete().eq('id', fc.id);
+                                        if (error) throw error;
+                                        setMyFlashcards(prev => prev.filter(c => c.id !== fc.id));
+                                      } catch (e) {
+                                        alert("Error: " + e.message);
+                                      }
+                                    }
+                                  });
+                                }} title="Delete"><Icons.Trash size={14} /></button>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
