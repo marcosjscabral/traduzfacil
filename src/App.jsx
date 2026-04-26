@@ -763,6 +763,19 @@ const App = () => {
     }
   }, [activeHomeTab, user, isPremium]);
 
+  /* ─── Handle bfcache (Browser Back Button) ─── */
+  const [redirectingBookId, setRedirectingBookId] = useState(null);
+  
+  useEffect(() => {
+    const handlePageShow = (event) => {
+      if (event.persisted) {
+        setRedirectingBookId(null);
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
+
   /* ─── Fetch Flashcards and Purchases Globally ─── */
   const [purchasedBookIds, setPurchasedBookIds] = useState([]);
 
@@ -2349,8 +2362,11 @@ const App = () => {
                             <h4>{book.title}</h4>
                             <p>{book.author}</p>
                             <button
-                              className={`btn ${isUnlocked ? 'btn-success' : (book.premium_only ? 'btn-secondary' : 'btn-primary')} mk-action-btn`}
-                              style={{ transition: 'all 0.2s ease' }}
+                              className={`btn ${redirectingBookId === book.id ? '' : (isUnlocked ? 'btn-success' : (book.premium_only ? 'btn-secondary' : 'btn-primary'))} mk-action-btn`}
+                              style={{ 
+                                transition: 'all 0.2s ease',
+                                ...(redirectingBookId === book.id ? { background: '#6366f1', color: '#fff' } : {}) 
+                              }}
                               onClick={(e) => {
                                 const btn = e.currentTarget;
                                 if (!user) {
@@ -2360,16 +2376,17 @@ const App = () => {
                                   setCurrentView('pricing');
                                 } else if (!book.free && !hasPurchased) {
                                   // Paid book, not bought → buy it
-                                  btn.style.background = '#6366f1';
-                                  btn.style.color = '#fff';
-                                  btn.textContent = 'Redirecting...';
+                                  setRedirectingBookId(book.id);
                                   const payLink = getPaymentLink(book.stripe_price_id, book.stripe_payment_link, user.id);
                                   if (payLink) {
                                     setTimeout(() => { window.location.href = payLink; }, 400);
                                   } else {
                                     btn.style.background = '#ef4444';
                                     btn.textContent = 'Not Configured';
-                                    setTimeout(() => { btn.style.background = ''; btn.textContent = `Buy ${displayPrice}`; }, 2000);
+                                    setTimeout(() => { 
+                                      setRedirectingBookId(null); 
+                                      btn.style.background = '';
+                                    }, 2000);
                                   }
                                 } else {
                                   // Free, premium or already bought → open
@@ -2380,7 +2397,7 @@ const App = () => {
                                 }
                               }}
                             >
-                              {book.premium_only && !isPremium ? '🔒 Premium Only' : isUnlocked ? 'Start Translating' : `Buy ${displayPrice}`}
+                              {redirectingBookId === book.id ? 'Redirecting...' : (book.premium_only && !isPremium ? '🔒 Premium Only' : isUnlocked ? 'Start Translating' : `Buy ${displayPrice}`)}
                             </button>
                           </div>
                         </div>
