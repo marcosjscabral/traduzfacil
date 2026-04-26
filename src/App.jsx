@@ -1704,7 +1704,8 @@ const App = () => {
               </div>
 
               <div className="guide-footer">
-                <p>Do you have any questions or need help? Contact us through our customer email: traxbookepub@gmail.com</p>
+                <p>Do you have any questions or need help? Contact us through our customer email: traxbookepub@gmail.com
+                  traxbook version 1.2 - 04/2026  </p>
               </div>
             </div>
           </section>
