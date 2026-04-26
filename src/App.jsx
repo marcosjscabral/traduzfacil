@@ -119,12 +119,12 @@ const ADMIN_EMAILS = ['marcosjscabral@gmail.com'];
 const DEFAULT_PREMIUM_PLAN = {
   name: 'Traxbook Premium',
   description: 'Infinite upload, Cloud Sync, Anki Flashcards, Multi-device sync, and Exclusive Discounts.',
-  price_cents: 1990,
+  price_cents: 290,
   currency: 'usd',
   interval: 'month',
-  stripe_price_id: 'price_1TOIa5F0lxCQwtFq9pAZKIOH',
-  stripe_product_id: 'prod_UN2fqt7rN7Qmzz',
-  stripe_payment_link: 'https://buy.stripe.com/4gM7sLd9Y1iObeg35wcwg00',
+  stripe_price_id: 'price_1TQZZEF0lxCQwtFq9zKNq0iN',
+  stripe_product_id: 'prod_UPOLSAr2ZHNZiy',
+  stripe_payment_link: 'https://buy.stripe.com/cNi28rc5U7Hcbeg7lMcwg0b',
 };
 
 // Load saved premium plan from localStorage or use default
@@ -138,7 +138,8 @@ function loadPremiumPlan() {
 
 // Centralized map: stripe_price_id → Payment Link URL
 const STRIPE_PAYMENT_LINKS = {
-  'price_1TOIa5F0lxCQwtFq9pAZKIOH': 'https://buy.stripe.com/4gM7sLd9Y1iObeg35wcwg00',  // Premium Subscription
+  'price_1TQZZEF0lxCQwtFq9zKNq0iN': 'https://buy.stripe.com/cNi28rc5U7Hcbeg7lMcwg0b',  // Premium Subscription
+  'price_1TOIa5F0lxCQwtFq9pAZKIOH': 'https://buy.stripe.com/4gM7sLd9Y1iObeg35wcwg00',  // Old Premium Subscription
   'price_1TOIaIF0lxCQwtFqj99VXrl0': 'https://buy.stripe.com/5kQ00j4DsaTodmo35wcwg01',  // Dracula
   'price_1TOIaIF0lxCQwtFq9YDWh6dz': 'https://buy.stripe.com/14A8wPgmagdIgyA8pQcwg02',  // Sherlock Holmes
   'price_1TOIaQF0lxCQwtFqiDtYDNU8': 'https://buy.stripe.com/6oUfZhc5U8Lgeqs21scwg03',  // Access Combo
