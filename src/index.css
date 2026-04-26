@@ -248,6 +248,18 @@ body {
   filter: brightness(1.05);
 }
 
+.btn-success {
+  background: var(--success);
+  color: white;
+  box-shadow: 0 2px 8px rgba(44, 105, 78, 0.25);
+}
+
+.btn-success:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(44, 105, 78, 0.35);
+  filter: brightness(1.05);
+}
+
 .btn-secondary {
   background: var(--bg-white);
   color: var(--text-secondary);

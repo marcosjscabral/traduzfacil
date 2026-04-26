@@ -763,9 +763,12 @@ const App = () => {
     }
   }, [activeHomeTab, user, isPremium]);
 
-  /* ─── Fetch Flashcards Globally ─── */
+  /* ─── Fetch Flashcards and Purchases Globally ─── */
+  const [purchasedBookIds, setPurchasedBookIds] = useState([]);
+
   useEffect(() => {
     if (user) {
+      // Fetch flashcards
       const fetchCards = async () => {
         try {
           const { data, error } = await supabase.from('flashcards').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
@@ -775,8 +778,22 @@ const App = () => {
         }
       };
       fetchCards();
+
+      // Fetch purchases
+      const fetchPurchases = async () => {
+        try {
+          const { data, error } = await supabase.from('purchases').select('book_id').eq('user_id', user.id);
+          if (!error && data) {
+            setPurchasedBookIds(data.map(p => p.book_id).filter(Boolean));
+          }
+        } catch (e) {
+          console.error('Failed to fetch purchases:', e);
+        }
+      };
+      fetchPurchases();
     } else {
       setMyFlashcards([]);
+      setPurchasedBookIds([]);
     }
   }, [user]);
 
@@ -874,16 +891,32 @@ const App = () => {
 
   /* ─── Handle Download from Public Library (Supabase Mock) ─── */
   const handleDownloadMarketplaceEpub = useCallback(async (book) => {
-    if (!book.free) {
+    // 1. Auth check
+    if (!book.free || book.premium_only) {
       if (!user) {
         setShowAuthModal(true);
         return;
       }
-      if (!isPremium) {
-        setShowUpgradeModal(true);
+    }
+
+    // 2. Premium-only check
+    if (book.premium_only && !isPremium) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    // 3. Purchase check for paid books
+    if (!book.free && !isAdmin) {
+      const mkBookId = btoa(unescape(encodeURIComponent(book.title + '||' + (book.author || '')))).replace(/[^a-zA-Z0-9]/g, '');
+      const isDownloaded = library.some(l => l.id === mkBookId);
+      const hasPurchased = purchasedBookIds.includes(book.id);
+
+      if (!isDownloaded && !hasPurchased) {
+        alert('You need to purchase this book first to translate it.');
         return;
       }
     }
+
     if (!book.epub_url) {
       alert('The URL of this EPUB has not been configured in the database (Supabase Demo) yet.');
       return;
@@ -906,7 +939,7 @@ const App = () => {
     } finally {
       setLoading(false);
     }
-  }, [applyBookState, user, isPremium]);
+  }, [applyBookState, user, isPremium, library, purchasedBookIds, isAdmin]);
 
   /* ─── Handle file ─── */
   const handleFile = useCallback(async (file) => {
@@ -2260,6 +2293,17 @@ const App = () => {
                         ? `R$${((book.price_cents || 0) * 0.8 / 100).toFixed(2)}` // 20% Discount
                         : `R$${((book.price_cents || 0) / 100).toFixed(2)}`;
 
+                      // Check if book is already in local library (bought/downloaded)
+                      const mkBookId = btoa(unescape(encodeURIComponent(book.title + '||' + (book.author || '')))).replace(/[^a-zA-Z0-9]/g, '');
+                      const isDownloaded = library.some(l => l.id === mkBookId);
+                      
+                      // Check database purchase record
+                      const hasPurchased = purchasedBookIds.includes(book.id);
+                      
+                      // PREMIUM correction: Premium does NOT get all books for free. 
+                      // Unlocked if: it's free AND (not premium-only OR user is premium) OR already downloaded OR purchased.
+                      const isUnlocked = isDownloaded || hasPurchased || (book.free && (!book.premium_only || isPremium));
+
                       return (
                         <div key={book.id} className="mk-card">
                           <div className="mk-cover" style={{ backgroundImage: `url(${book.cover_url || ''})` }}>
@@ -2281,7 +2325,7 @@ const App = () => {
                             <h4>{book.title}</h4>
                             <p>{book.author}</p>
                             <button
-                              className={`btn ${book.free || isPremium || (!book.premium_only && !book.free) ? (book.premium_only && !isPremium ? 'btn-secondary' : 'btn-primary') : 'btn-secondary'} mk-action-btn`}
+                              className={`btn ${isUnlocked ? 'btn-success' : (book.premium_only ? 'btn-secondary' : 'btn-primary')} mk-action-btn`}
                               style={{ transition: 'all 0.2s ease' }}
                               onClick={(e) => {
                                 const btn = e.currentTarget;
@@ -2290,8 +2334,8 @@ const App = () => {
                                 } else if (book.premium_only && !isPremium) {
                                   // Premium-only book, user is not premium → go to pricing
                                   setCurrentView('pricing');
-                                } else if (!book.free && !book.premium_only && !isPremium) {
-                                  // Paid book, not premium-only → buy it
+                                } else if (!book.free && !book.premium_only && !isPremium && !isDownloaded && !hasPurchased) {
+                                  // Paid book, not premium-only, not bought → buy it
                                   btn.style.background = '#6366f1';
                                   btn.style.color = '#fff';
                                   btn.textContent = 'Redirecting...';
@@ -2304,15 +2348,15 @@ const App = () => {
                                     setTimeout(() => { btn.style.background = ''; btn.textContent = `Buy ${displayPrice}`; }, 2000);
                                   }
                                 } else {
-                                  // Free or premium user → open
-                                  btn.style.background = '#10b981';
+                                  // Free, premium or already bought → open
+                                  btn.style.background = 'var(--success)';
                                   btn.style.color = '#fff';
                                   btn.textContent = 'Loading...';
                                   handleDownloadMarketplaceEpub(book);
                                 }
                               }}
                             >
-                              {book.premium_only && !isPremium ? '🔒 Premium Only' : book.free || isPremium ? 'Start Translating' : `Buy ${displayPrice}`}
+                              {book.premium_only && !isPremium ? '🔒 Premium Only' : isUnlocked ? 'Start Translating' : `Buy ${displayPrice}`}
                             </button>
                           </div>
                         </div>
