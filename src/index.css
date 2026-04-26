@@ -1650,6 +1650,107 @@ body {
   white-space: nowrap;
 }
 
+/* ============ GUIDE SECTION ============ */
+.guide-section {
+  max-width: 800px;
+  margin: 0 auto;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.guide-content {
+  background: var(--bg-white);
+  padding: clamp(24px, 5vw, 48px);
+  color: var(--text-body);
+}
+
+.guide-content h1 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 36px);
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.guide-content h1 .wavy-underline {
+  text-decoration: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: #ef4444; /* red wavy */
+}
+
+.guide-subtitle {
+  font-family: var(--font-reader);
+  font-size: 16px;
+  font-style: italic;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.guide-intro {
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.guide-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 32px 0;
+  border: none;
+}
+
+.guide-section-block {
+  margin-bottom: 32px;
+}
+
+.guide-section-block h2 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.guide-section-block p {
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.guide-section-block ul, .guide-section-block ol {
+  padding-left: 24px;
+  margin-bottom: 24px;
+}
+
+.guide-section-block li {
+  margin-bottom: 8px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.guide-section-block strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.guide-footer {
+  margin-top: 32px;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.traxbook-tag {
+  color: var(--text-secondary);
+  text-decoration: underline wavy #ef4444;
+  font-weight: 600;
+}
+
 /* ============ FLASHCARDS (My Flashcards) ============ */
 .flashcards-grid {
   display: grid;

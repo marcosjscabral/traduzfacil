@@ -1591,10 +1591,13 @@ const App = () => {
           {currentView !== 'editor' && (
             <>
               {isAdmin && (
-                <button className="btn btn-ghost" onClick={() => setCurrentView(currentView === 'admin' ? 'home' : 'admin')} title="Admin Panel">
+                <button className="btn btn-ghost" onClick={() => { setCurrentView(currentView === 'admin' ? 'home' : 'admin'); setMobileMenuOpen(false); }} title="Admin Panel">
                   <Icons.Settings /> {currentView === 'admin' ? 'Exit Admin' : 'Admin'}
                 </button>
               )}
+              <button className="btn btn-ghost" onClick={() => { setCurrentView('guide'); setMobileMenuOpen(false); }} title="User Guide">
+                <Icons.Book /> Guia
+              </button>
               {user ? (
                 <div className="user-menu">
                   {user.user_metadata?.avatar_url ? (
@@ -1620,6 +1623,91 @@ const App = () => {
 
       {/* ═══ Main ═══ */}
       <main className="app-main">
+
+        {/* ─── VIEW: GUIDE ─── */}
+        {currentView === 'guide' && (
+          <section className="guide-section fade-in">
+            <button className="btn btn-ghost back-btn" onClick={() => setCurrentView('home')} style={{ marginBottom: '20px' }}>
+              <Icons.ArrowLeft /> Back
+            </button>
+            <div className="guide-content">
+              <h1>📘 Guia do Usuário: <span className="wavy-underline">Traxbook</span></h1>
+              <p className="guide-subtitle">Transformando sua leitura em aprendizado ativo.</p>
+              
+              <p className="guide-intro">
+                Bem-vindo ao <strong>Traxbook</strong>! Este guia rápido ajudará você a navegar pela nossa plataforma e entender como tirar o máximo proveito das suas sessões de tradução e estudo.
+              </p>
+
+              <hr className="guide-divider" />
+
+              <div className="guide-section-block">
+                <h2>🚀 Começando sua Tradução</h2>
+                <p>Para garantir a melhor experiência, siga estas diretrizes de upload:</p>
+                <ul>
+                  <li><strong>Formato Único:</strong> O <span className="traxbook-tag">Traxbook</span> processa exclusivamente arquivos <strong>.epub</strong>.</li>
+                  <li><strong>Acesso:</strong> O upload é liberado apenas para usuários logados.</li>
+                  <li><strong>Frequência:</strong> Você pode subir <strong>livros à vontade</strong>. As traduções ficam salvas no cache do seu navegador.</li>
+                </ul>
+              </div>
+
+              <hr className="guide-divider" />
+
+              <div className="guide-section-block">
+                <h2>✍️ Como Traduzir e Estudar</h2>
+                <p>O <span className="traxbook-tag">Traxbook</span> organiza o texto original parágrafo por parágrafo, criando um campo de resposta logo abaixo para sua prática.</p>
+              </div>
+
+              <div className="guide-section-block">
+                <h2>🗂️ Sistema de Flashcards</h2>
+                <p>Encontrou uma palavra nova ou expressão difícil?</p>
+                <ul>
+                  <li><strong>Salve para revisar:</strong> Usuários logados podem criar flashcards durante a tradução.</li>
+                  <li><strong>Limite Free:</strong> Salve até <strong>20 flashcards</strong> para reforçar seu vocabulário.</li>
+                </ul>
+              </div>
+
+              <hr className="guide-divider" />
+
+              <div className="guide-section-block">
+                <h2>⭐ Vantagens do Plano Premium</h2>
+                <p>Leve seus estudos para o próximo nível com recursos exclusivos:</p>
+                <ul>
+                  <li><strong><span className="traxbook-tag">Traxbook</span> Drive:</strong> Sincronização automática na nuvem. Comece no PC e continue no tablet exatamente de onde parou.</li>
+                  <li><strong>Flash Cards ilimitados:</strong> crie quantos flash cards quiser.</li>
+                  <li><strong>Integração com Anki:</strong> Exporte seus flashcards em formato CSV para praticar no Anki.</li>
+                  <li><strong>Exportação Completa:</strong> Baixe o seu livro traduzido em formato EPUB.<br/><span style={{fontSize: '0.9em', fontStyle: 'italic', color: 'var(--text-dim)'}}>Nota: Todo arquivo exportado inclui a assinatura "Translated by [Email] via <span className="traxbook-tag" style={{textDecorationColor: 'gray', textDecorationStyle: 'wavy'}}>Traxbook</span>" para garantir a autoria do seu esforço.</span></li>
+                  <li><strong>Marketplace:</strong> Ganhe <strong>20% de desconto</strong> em todos os livros da nossa biblioteca de clássicos.</li>
+                </ul>
+              </div>
+
+              <hr className="guide-divider" />
+
+              <div className="guide-section-block">
+                <h2>💳 Assinatura e Pagamentos</h2>
+                <p>Gerenciamos tudo de forma simples e segura:</p>
+                <ul>
+                  <li><strong>Segurança:</strong> Processamos pagamentos via <strong>Stripe</strong>.</li>
+                  <li><strong>Flexibilidade:</strong> Assinaturas mensais que podem ser canceladas a qualquer momento pelo seu painel de controle.</li>
+                </ul>
+              </div>
+
+              <hr className="guide-divider" />
+
+              <div className="guide-section-block">
+                <h2>💡 Dicas para um Melhor Aprendizado</h2>
+                <ol>
+                  <li><strong>Consistência é chave:</strong> Tente traduzir ao menos 5 parágrafos por dia.</li>
+                  <li><strong>Use os Flashcards:</strong> Não salve apenas palavras soltas; salve frases curtas para entender o contexto.</li>
+                  <li><strong>Sincronize:</strong> Se você estuda em trânsito, o plano Premium garante que seu progresso nunca se perca entre dispositivos.</li>
+                </ol>
+              </div>
+
+              <div className="guide-footer">
+                <p>Dúvidas ou suporte? Entre em contato através do nosso portal do cliente.</p>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ─── VIEW: PRICING ─── */}
         {currentView === 'pricing' && (
