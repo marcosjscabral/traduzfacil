@@ -2107,7 +2107,7 @@ const App = () => {
               Load your EPUB file and start translating instantly.
               {isPremium
                 ? "All your progress is securely saved in the cloud (Traxbook Drive)."
-                : "All your progress is saved offline in your browser."}
+                : " All your progress is saved offline in your browser"}
             </p>
 
             {/* ─── Tabs Navigation ─── */}
