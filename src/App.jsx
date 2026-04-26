@@ -905,13 +905,11 @@ const App = () => {
       return;
     }
 
-    // 3. Purchase check for paid books
+    // 3. Purchase check for paid books (strictly database)
     if (!book.free && !isAdmin) {
-      const mkBookId = btoa(unescape(encodeURIComponent(book.title + '||' + (book.author || '')))).replace(/[^a-zA-Z0-9]/g, '');
-      const isDownloaded = library.some(l => l.id === mkBookId);
       const hasPurchased = purchasedBookIds.includes(book.id);
 
-      if (!isDownloaded && !hasPurchased) {
+      if (!hasPurchased) {
         alert('You need to purchase this book first to translate it.');
         return;
       }
@@ -2300,9 +2298,9 @@ const App = () => {
                       // Check database purchase record
                       const hasPurchased = purchasedBookIds.includes(book.id);
                       
-                      // PREMIUM correction: Premium does NOT get all books for free. 
-                      // Unlocked if: it's free AND (not premium-only OR user is premium) OR already downloaded OR purchased.
-                      const isUnlocked = isDownloaded || hasPurchased || (book.free && (!book.premium_only || isPremium));
+                      // LOGIC CORRECTION: Paid books strictly follow the 'purchases' database table.
+                      // Free books are unlocked (but premium_only free books require isPremium).
+                      const isUnlocked = book.free ? (!book.premium_only || isPremium) : hasPurchased;
 
                       return (
                         <div key={book.id} className="mk-card">
@@ -2360,8 +2358,8 @@ const App = () => {
                                 } else if (book.premium_only && !isPremium) {
                                   // Premium-only book, user is not premium → go to pricing
                                   setCurrentView('pricing');
-                                } else if (!book.free && !book.premium_only && !isPremium && !isDownloaded && !hasPurchased) {
-                                  // Paid book, not premium-only, not bought → buy it
+                                } else if (!book.free && !hasPurchased) {
+                                  // Paid book, not bought → buy it
                                   btn.style.background = '#6366f1';
                                   btn.style.color = '#fff';
                                   btn.textContent = 'Redirecting...';
