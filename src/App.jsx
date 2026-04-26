@@ -2063,7 +2063,7 @@ const App = () => {
                     <Icons.Upload />
                   </div>
                   <span className="drop-text-main">
-                    {!user ? 'Sign in to upload your EPUB' : 'Drag your EPUB or click here'}
+                    {!user ? 'Upload your EPUB file.' : 'Drag your EPUB or click here'}
                   </span>
                   <span className="drop-text-sub">
                     {!user ? 'Authentication is required for uploads' : 'Only .epub files are accepted'}
@@ -2372,7 +2372,7 @@ const App = () => {
         {/* ─── VIEW: EDITOR ─── */}
         {currentView === 'editor' && hasBook && (
           <section className="editor-layout">
-            
+
             {/* LEFT COLUMN: Table of Contents */}
             <aside className="editor-sidebar-left">
               <h4 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '12px', fontWeight: 600, letterSpacing: '1px' }}>
@@ -2380,8 +2380,8 @@ const App = () => {
               </h4>
               <ul className="toc-list">
                 {chapters.map((ch, i) => (
-                  <li 
-                    key={i} 
+                  <li
+                    key={i}
                     className={`toc-item ${currentChapter === i ? 'active' : ''}`}
                     onClick={() => goToChapter(i)}
                     title={ch.chapterLabel}
