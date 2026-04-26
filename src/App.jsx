@@ -1530,7 +1530,7 @@ const App = () => {
       {/* ═══ Header ═══ */}
       <header className="app-header">
         <div className="header-brand" onClick={() => { if (!hasBook) setCurrentView('home'); else clearBook(); }} style={{ cursor: 'pointer' }}>
-          <img src="/logo.png" alt="Traxbook Logo" className="brand-logo" />
+          <img src="/logo.svg" alt="Traxbook Logo" className="brand-logo" style={{ height: '36px', width: 'auto' }} />
         </div>
 
         <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
