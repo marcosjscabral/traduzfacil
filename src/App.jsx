@@ -146,14 +146,36 @@ const STRIPE_PAYMENT_LINKS = {
   'price_1TOLYkF0lxCQwtFq2CwVM2XR': 'https://buy.stripe.com/bJe9ATee25z40zC0Xocwg04',  // Jesus the Christ
 };
 
+// Helper: detect the browser locale in a Stripe-compatible format (e.g. "pt-BR", "en", "es")
+function getBrowserLocale() {
+  const lang = navigator.language || navigator.languages?.[0] || 'auto';
+  // Stripe supports full locales like pt-BR, en-US, or short codes like pt, en, es
+  // We pass it as-is; Stripe will fall back to 'auto' if unrecognised
+  return lang;
+}
+
 // Helper: resolve the correct payment link for a book or plan
 // Appends client_reference_id so the Stripe webhook can identify the Supabase user
+// Appends locale so Stripe Checkout renders in the user's browser language
 function getPaymentLink(stripePriceId, fallbackPaymentLink, userId) {
-  const baseUrl = fallbackPaymentLink || STRIPE_PAYMENT_LINKS[stripePriceId];
-  if (!baseUrl) return null;
-  if (!userId) return baseUrl;
+  // Clean inputs just in case they come as string 'null' or have whitespace
+  const cleanFallback = (fallbackPaymentLink && fallbackPaymentLink !== 'null' && fallbackPaymentLink !== 'undefined') ? fallbackPaymentLink.trim() : null;
+  const cleanPriceId = (stripePriceId && stripePriceId !== 'null' && stripePriceId !== 'undefined') ? stripePriceId.trim() : null;
+
+  const baseUrl = cleanFallback || (cleanPriceId ? STRIPE_PAYMENT_LINKS[cleanPriceId] : null);
+
+  if (!baseUrl) {
+    console.error(`[Stripe] Not Configured: priceId=${stripePriceId}, fallback=${fallbackPaymentLink}`);
+    return null;
+  }
+
+  // Build query params
+  const params = new URLSearchParams();
+  if (userId) params.set('client_reference_id', userId);
+  params.set('locale', getBrowserLocale());
+
   const separator = baseUrl.includes('?') ? '&' : '?';
-  return `${baseUrl}${separator}client_reference_id=${userId}`;
+  return `${baseUrl}${separator}${params.toString()}`;
 }
 
 // Helper: call Stripe Admin Edge Function
@@ -906,82 +928,17 @@ const App = () => {
       const { metadata: meta, chapters: chs } = await parseEpub(arrayBuffer);
       const id = btoa(unescape(encodeURIComponent(meta.title + '||' + meta.creator))).replace(/[^a-zA-Z0-9]/g, '');
 
-      // MANIFESTO: Pessoas logadas (gratuitas): Upload 1 arquivo / 7 dias.
-      // Não importa se atualizar a página ou logar em outro computador.
-      // Dupla camada: localStorage (imediato) + Supabase (cross-device).
-      if (user && !isPremium) {
-        const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-        let blocked = false;
-
-        // Camada 1: localStorage (persiste entre refreshes no mesmo navegador)
-        const localKey = `traxbook_upload_${user.id}`;
-        try {
-          const localData = JSON.parse(localStorage.getItem(localKey) || 'null');
-          if (localData && localData.timestamp) {
-            const elapsed = Date.now() - localData.timestamp;
-            if (elapsed < SEVEN_DAYS_MS && localData.bookId !== id) {
-              blocked = true;
-            }
-          }
-        } catch (_) { /* localStorage parse error, ignore */ }
-
-        // Camada 2: Supabase (persiste entre dispositivos/navegadores)
-        if (!blocked) {
-          try {
-            const { data: freshProfile } = await supabase
-              .from('profiles')
-              .select('last_upload_at, last_upload_id')
-              .eq('id', user.id)
-              .single();
-
-            if (freshProfile && freshProfile.last_upload_at) {
-              const elapsed = Date.now() - new Date(freshProfile.last_upload_at).getTime();
-              if (elapsed < SEVEN_DAYS_MS && freshProfile.last_upload_id !== id) {
-                blocked = true;
-              }
-            }
-          } catch (_) {
-            // Se a consulta falhar (coluna não existe, rede, etc.), confiar no localStorage
-            console.warn('Supabase upload check failed, relying on localStorage only.');
-          }
-        }
-
-        if (blocked) {
-          setLoading(false);
-          setShowUpgradeModal(true);
-          return;
-        }
-      }
-
+      // MANIFESTO: Usuários gratuitos podem fazer upload livremente.
+      // Arquivos ficam salvos apenas no navegador (IndexedDB local).
+      // Sem bloqueio de tempo — upload ilimitado para todos os logados.
       await applyBookState(id, meta, chs);
-
-      // Registrar upload para usuários gratuitos (dupla camada)
-      if (user && !isPremium) {
-        const timestamp = new Date().toISOString();
-
-        // Salvar no localStorage (imediato, sobrevive a refresh)
-        const localKey = `traxbook_upload_${user.id}`;
-        localStorage.setItem(localKey, JSON.stringify({ timestamp: Date.now(), bookId: id }));
-
-        // Salvar no Supabase (cross-device)
-        try {
-          await supabase
-            .from('profiles')
-            .update({ last_upload_at: timestamp, last_upload_id: id })
-            .eq('id', user.id);
-        } catch (_) {
-          console.warn('Could not save upload tracking to Supabase.');
-        }
-
-        setProfile(prev => prev ? { ...prev, last_upload_at: timestamp, last_upload_id: id } : prev);
-      }
     } catch (err) {
       console.error('Error processing EPUB:', err);
       alert('Could not load this EPUB. Make sure the file is valid.');
     } finally {
       setLoading(false);
     }
-  }, [applyBookState, user, isPremium]);
+  }, [applyBookState, user]);
 
   /* ─── Manual Save Logic ─── */
   const chaptersRef = useRef(chapters);
@@ -1177,8 +1134,9 @@ const App = () => {
   }, []);
   /* ═══════════════════ FLASHCARDS HANDLERS ═══════════════════ */
   const handleEditorMouseUp = useCallback(() => {
-    // MANIFESTO: Pessoas Premium: Create flashcard to Anki
-    if (!isPremium) return;
+    // MANIFESTO: Todos os usuários logados podem criar flashcards.
+    // Plano gratuito: até 20 flashcards.
+    if (!user) return;
 
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) return;
@@ -1187,7 +1145,9 @@ const App = () => {
     if (text.length > 0) {
       setFlashcardModal({ show: true, source: text, translation: '', success: false });
     }
-  }, [isPremium]);
+  }, [user]);
+
+  const FREE_FLASHCARD_LIMIT = 20;
 
   const handleSaveFlashcard = async () => {
     if (!user) {
@@ -1199,13 +1159,18 @@ const App = () => {
       alert('Please enter a translation.');
       return;
     }
-    // setLoading(true); // Removed to prevent whole-app unmount & scroll reset
+    // MANIFESTO: Plano gratuito pode salvar até 20 flashcards
+    if (!isPremium && myFlashcards.length >= FREE_FLASHCARD_LIMIT) {
+      setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null });
+      setShowUpgradeModal(true);
+      return;
+    }
     try {
       const { error, data } = await supabase.from('flashcards').insert([{
         user_id: user.id,
         source_text: flashcardModal.source,
         translated_text: flashcardModal.translation,
-        origin_id: flashcardModal.originId // New column for targeted highlighting
+        origin_id: flashcardModal.originId
       }]).select();
       if (error) {
         if (error.code === '42P01') throw new Error("The 'flashcards' table doesn't exist yet on Supabase. Please create it!");
@@ -1607,9 +1572,16 @@ const App = () => {
                 <Icons.Cloud /> Save to Cloud
               </button>
 
-              <button className="btn btn-ghost" onClick={() => exportAsEpub(metadata, chapters, user?.email)} title="Export new EPUB">
-                <Icons.Download /> Export EPUB
-              </button>
+              {/* MANIFESTO: Download EPUB traduzido é exclusivo para Premium */}
+              {isPremium ? (
+                <button className="btn btn-ghost" onClick={() => exportAsEpub(metadata, chapters, user?.email)} title="Export translated EPUB">
+                  <Icons.Download /> Export EPUB
+                </button>
+              ) : (
+                <button className="btn btn-ghost" onClick={() => setShowUpgradeModal(true)} title="Premium feature — upgrade to export">
+                  <Icons.Lock /> Export EPUB
+                </button>
+              )}
               <button className="btn btn-secondary" onClick={clearBook}>
                 <Icons.LogOut /> Exit
               </button>
@@ -1670,10 +1642,11 @@ const App = () => {
                   </div>
                 </div>
                 <ul className="pricing-features">
-                  <li><Icons.Check /> Upload your own EPUBs</li>
+                  <li><Icons.Check /> Upload unlimited EPUBs</li>
                   <li><Icons.Check /> Translate offline in browser</li>
-                  <li><Icons.Check /> Export translated EPUB</li>
+                  <li><Icons.Check /> Up to 20 flashcards</li>
                   <li><Icons.Check /> Access free public books</li>
+                  <li className="pricing-disabled"><Icons.X /> Export translated EPUB</li>
                   <li className="pricing-disabled"><Icons.X /> Save to Cloud</li>
                   <li className="pricing-disabled"><Icons.X /> Multi-device sync</li>
                   <li className="pricing-disabled"><Icons.X /> Premium book library</li>
@@ -1693,11 +1666,12 @@ const App = () => {
                 </div>
                 <ul className="pricing-features">
                   <li><Icons.Check /> Everything in Free</li>
+                  <li className="pricing-highlight"><Icons.Download /> Export translated EPUB</li>
                   <li className="pricing-highlight"><Icons.Cloud /> Save to Cloud</li>
                   <li className="pricing-highlight"><Icons.Smartphone /> Multi-device sync</li>
                   <li className="pricing-highlight"><Icons.Infinity /> Unlimited premium books</li>
+                  <li className="pricing-highlight"><Icons.Zap /> Unlimited flashcards</li>
                   <li><Icons.Shield /> Priority support</li>
-                  <li><Icons.Zap /> Early access to new features</li>
                 </ul>
                 <button
                   className="btn btn-primary btn-block btn-lg"
@@ -2297,7 +2271,13 @@ const App = () => {
                 <div className="marketplace-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <h3>My Flashcards</h3>
-                    <p>Review and edit the flashcards you created while reading.</p>
+                    {isPremium ? (
+                      <p>Review and edit the flashcards you created while reading.</p>
+                    ) : (
+                      <p>You have {myFlashcards.length}/{FREE_FLASHCARD_LIMIT} flashcards saved.{myFlashcards.length >= FREE_FLASHCARD_LIMIT ? ' ' : ''}
+                        {myFlashcards.length >= FREE_FLASHCARD_LIMIT && <span style={{ color: '#f59e0b', fontWeight: 600 }}>Limit reached — <button className="btn-link" style={{ color: '#f59e0b', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0, textDecoration: 'underline' }} onClick={() => setCurrentView('pricing')}>upgrade to Pro</button> for unlimited.</span>}
+                      </p>
+                    )}
                   </div>
                   {myFlashcards.length > 0 && (
                     <button className="btn btn-secondary" onClick={handleDownloadCSV} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
