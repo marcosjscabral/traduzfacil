@@ -1727,7 +1727,7 @@ const App = () => {
                 <div className="pricing-card-header">
                   <h3>Free</h3>
                   <div className="pricing-price">
-                    <span className="pricing-amount">$0</span>
+                    <span className="pricing-amount">R$0</span>
                     <span className="pricing-period">forever</span>
                   </div>
                 </div>
@@ -1750,7 +1750,7 @@ const App = () => {
                 <div className="pricing-card-header">
                   <h3><Icons.Crown /> {PREMIUM_PLAN.name}</h3>
                   <div className="pricing-price">
-                    <span className="pricing-amount">${(PREMIUM_PLAN.price_cents / 100).toFixed(2)}</span>
+                    <span className="pricing-amount">R${(PREMIUM_PLAN.price_cents / 100).toFixed(2)}</span>
                     <span className="pricing-period">/month</span>
                   </div>
                 </div>
@@ -1808,7 +1808,7 @@ const App = () => {
                   <input value={PREMIUM_PLAN.name} onChange={(e) => setPREMIUM_PLAN(p => ({ ...p, name: e.target.value }))} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Price (cents) → ${(PREMIUM_PLAN.price_cents / 100).toFixed(2)}</label>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Price (cents) → R${(PREMIUM_PLAN.price_cents / 100).toFixed(2)}</label>
                   <input type="number" value={PREMIUM_PLAN.price_cents} onChange={(e) => setPREMIUM_PLAN(p => ({ ...p, price_cents: Number(e.target.value) }))} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                 </div>
                 <div>
@@ -1967,7 +1967,7 @@ const App = () => {
                 {!adminEditingBook.free && (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
-                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Price (cents) → ${((adminEditingBook.price_cents || 0) / 100).toFixed(2)}</label>
+                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Price (cents) → R${((adminEditingBook.price_cents || 0) / 100).toFixed(2)}</label>
                       <input type="number" value={adminEditingBook.price_cents || 0} onChange={(e) => setAdminEditingBook(p => ({ ...p, price_cents: Number(e.target.value) }))} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                     </div>
                     <div>
@@ -2257,8 +2257,8 @@ const App = () => {
                     marketplaceBooks.map(book => {
                       // MANIFESTO: Descontos em livros para Premium
                       const displayPrice = isPremium
-                        ? `$${((book.price_cents || 0) * 0.8 / 100).toFixed(2)}` // 20% Discount
-                        : `$${((book.price_cents || 0) / 100).toFixed(2)}`;
+                        ? `R$${((book.price_cents || 0) * 0.8 / 100).toFixed(2)}` // 20% Discount
+                        : `R$${((book.price_cents || 0) / 100).toFixed(2)}`;
 
                       return (
                         <div key={book.id} className="mk-card">
