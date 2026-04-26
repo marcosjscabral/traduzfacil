@@ -2371,127 +2371,178 @@ const App = () => {
 
         {/* ─── VIEW: EDITOR ─── */}
         {currentView === 'editor' && hasBook && (
-          <section className="editor-section">
-            {/* Book Card */}
-            <div className="book-card glass">
-              {metadata?.cover_url ? (
-                <div
-                  className="book-cover-placeholder"
-                  style={{
-                    backgroundImage: `url(${metadata.cover_url})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    border: 'none'
-                  }}
-                />
-              ) : (
-                <div className="book-cover-placeholder">
-                  <Icons.Book />
-                </div>
-              )}
-              <div className="book-info">
-                <h3>{metadata?.title}</h3>
-                <p className="author">by {metadata?.creator || 'Unknown Author'}</p>
-                <div className="book-stats">
-                  <span className="stat-chip"><Icons.Hash /> {totalParagraphs} lines</span>
-                  <span className="stat-chip"><Icons.Book /> {chapters.length} chapters</span>
-                </div>
-                <div className="progress-section">
-                  <div className="progress-header">
-                    <span>Translation Progress</span>
-                    <strong>{progress}%</strong>
-                  </div>
-                  <div className="progress-track">
-                    <div className="progress-fill" style={{ width: `${progress}%` }} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Chapter Navigation */}
-            {chapters.length > 1 && (
-              <div className="chapter-nav">
-                <button
-                  className="chapter-nav-btn"
-                  onClick={goToPrevChapter}
-                  disabled={currentChapter === 0}
-                  title="Previous chapter"
-                >
-                  <Icons.ChevronLeft />
-                </button>
-
-                <div className="chapter-nav-select-wrapper">
-                  <select
-                    className="chapter-nav-select"
-                    value={currentChapter}
-                    onChange={(e) => goToChapter(Number(e.target.value))}
+          <section className="editor-layout">
+            
+            {/* LEFT COLUMN: Table of Contents */}
+            <aside className="editor-sidebar-left">
+              <h4 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '12px', fontWeight: 600, letterSpacing: '1px' }}>
+                Table of Contents
+              </h4>
+              <ul className="toc-list">
+                {chapters.map((ch, i) => (
+                  <li 
+                    key={i} 
+                    className={`toc-item ${currentChapter === i ? 'active' : ''}`}
+                    onClick={() => goToChapter(i)}
+                    title={ch.chapterLabel}
                   >
-                    {chapters.map((ch, i) => (
-                      <option key={i} value={i}>
-                        {ch.chapterLabel} ({ch.paragraphs.length} lines)
-                      </option>
-                    ))}
-                  </select>
-                  <Icons.ChevronDown />
-                </div>
+                    {ch.chapterLabel}
+                  </li>
+                ))}
+              </ul>
+            </aside>
 
-                <button
-                  className="chapter-nav-btn"
-                  onClick={goToNextChapter}
-                  disabled={currentChapter === chapters.length - 1}
-                  title="Next chapter"
-                >
-                  <Icons.ChevronRight />
-                </button>
-
-                <span className="chapter-nav-counter">
-                  {currentChapter + 1} / {chapters.length}
-                </span>
-              </div>
-            )}
-
-            {/* Translation List — Paginated by Chapter */}
-            <div className="translation-list">
-              {chapters[currentChapter] && (
-                <React.Fragment key={currentChapter}>
-                  <div className="chapter-divider">
-                    <span className="chapter-label">{chapters[currentChapter].chapterLabel}</span>
+            {/* CENTER COLUMN: Reader & Translation */}
+            <div className="editor-center">
+              {/* Book Card */}
+              <div className="book-card glass">
+                {metadata?.cover_url ? (
+                  <div
+                    className="book-cover-placeholder"
+                    style={{
+                      backgroundImage: `url(${metadata.cover_url})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      border: 'none'
+                    }}
+                  />
+                ) : (
+                  <div className="book-cover-placeholder">
+                    <Icons.Book />
                   </div>
-                  {chapters[currentChapter].paragraphs.map((p, pi) => (
-                    <TranslationRow
-                      key={p.id}
-                      paragraph={p}
-                      flashcards={myFlashcards}
-                      onTranslationChange={(val) => handleTranslationChange(currentChapter, pi, val)}
-                      onSelect={(text) => setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: p.id })}
-                    />
-                  ))}
-                </React.Fragment>
+                )}
+                <div className="book-info">
+                  <h3>{metadata?.title}</h3>
+                  <p className="author">by {metadata?.creator || 'Unknown Author'}</p>
+                  <div className="book-stats">
+                    <span className="stat-chip"><Icons.Hash /> {totalParagraphs} lines</span>
+                    <span className="stat-chip"><Icons.Book /> {chapters.length} chapters</span>
+                  </div>
+                  <div className="progress-section">
+                    <div className="progress-header">
+                      <span>Translation Progress</span>
+                      <strong>{progress}%</strong>
+                    </div>
+                    <div className="progress-track">
+                      <div className="progress-fill" style={{ width: `${progress}%` }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mobile Chapter Navigation (Visible only on small screens) */}
+              {chapters.length > 1 && (
+                <div className="chapter-nav chapter-nav-mobile">
+                  <button
+                    className="chapter-nav-btn"
+                    onClick={goToPrevChapter}
+                    disabled={currentChapter === 0}
+                    title="Previous chapter"
+                  >
+                    <Icons.ChevronLeft />
+                  </button>
+
+                  <div className="chapter-nav-select-wrapper">
+                    <select
+                      className="chapter-nav-select"
+                      value={currentChapter}
+                      onChange={(e) => goToChapter(Number(e.target.value))}
+                    >
+                      {chapters.map((ch, i) => (
+                        <option key={i} value={i}>
+                          {ch.chapterLabel} ({ch.paragraphs.length} lines)
+                        </option>
+                      ))}
+                    </select>
+                    <Icons.ChevronDown />
+                  </div>
+
+                  <button
+                    className="chapter-nav-btn"
+                    onClick={goToNextChapter}
+                    disabled={currentChapter === chapters.length - 1}
+                    title="Next chapter"
+                  >
+                    <Icons.ChevronRight />
+                  </button>
+                </div>
+              )}
+
+              {/* Translation List — Paginated by Chapter */}
+              <div className="translation-list">
+                {chapters[currentChapter] && (
+                  <React.Fragment key={currentChapter}>
+                    <div className="chapter-divider">
+                      <span className="chapter-label">{chapters[currentChapter].chapterLabel}</span>
+                    </div>
+                    {chapters[currentChapter].paragraphs.map((p, pi) => (
+                      <TranslationRow
+                        key={p.id}
+                        paragraph={p}
+                        flashcards={myFlashcards}
+                        onTranslationChange={(val) => handleTranslationChange(currentChapter, pi, val)}
+                        onSelect={(text) => setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: p.id })}
+                      />
+                    ))}
+                  </React.Fragment>
+                )}
+              </div>
+
+              {/* Bottom Chapter Navigation */}
+              {chapters.length > 1 && (
+                <div className="chapter-nav chapter-nav-bottom">
+                  <button
+                    className="chapter-nav-btn"
+                    onClick={goToPrevChapter}
+                    disabled={currentChapter === 0}
+                  >
+                    <Icons.ChevronLeft /> Previous
+                  </button>
+                  <span className="chapter-nav-counter">
+                    {currentChapter + 1} / {chapters.length}
+                  </span>
+                  <button
+                    className="chapter-nav-btn"
+                    onClick={goToNextChapter}
+                    disabled={currentChapter === chapters.length - 1}
+                  >
+                    Next <Icons.ChevronRight />
+                  </button>
+                </div>
               )}
             </div>
 
-            {/* Bottom Chapter Navigation */}
-            {chapters.length > 1 && (
-              <div className="chapter-nav chapter-nav-bottom">
-                <button
-                  className="chapter-nav-btn"
-                  onClick={goToPrevChapter}
-                  disabled={currentChapter === 0}
-                >
-                  <Icons.ChevronLeft /> Previous
-                </button>
-                <span className="chapter-nav-counter">
-                  {currentChapter + 1} / {chapters.length}
-                </span>
-                <button
-                  className="chapter-nav-btn"
-                  onClick={goToNextChapter}
-                  disabled={currentChapter === chapters.length - 1}
-                >
-                  Next <Icons.ChevronRight />
-                </button>
+            {/* RIGHT COLUMN: Flashcards */}
+            <aside className="editor-sidebar-right">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <h4 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: '1px', margin: 0 }}>
+                  Flashcards
+                </h4>
+                {myFlashcards.length > 0 && (
+                  <span style={{ fontSize: '11px', background: 'var(--accent-soft)', color: 'var(--accent)', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
+                    {myFlashcards.length}
+                  </span>
+                )}
               </div>
-            )}
+
+              {myFlashcards.length === 0 ? (
+                <div className="flashcard-panel-empty">
+                  <Icons.Star style={{ width: 24, height: 24, marginBottom: 8, opacity: 0.5, margin: '0 auto', display: 'block' }} />
+                  <p>No flashcards yet.</p>
+                  <p style={{ marginTop: '4px', fontSize: '11px' }}>Select text while reading to create one.</p>
+                </div>
+              ) : (
+                <div className="flashcards-mini-list">
+                  {myFlashcards.map((fc, i) => (
+                    <div key={i} className="flashcard-mini-card">
+                      <strong>{fc.source_text}</strong>
+                      <span>{fc.translated_text}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </aside>
+
           </section>
         )}
       </main>
