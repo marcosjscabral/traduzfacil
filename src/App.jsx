@@ -119,12 +119,12 @@ const ADMIN_EMAILS = ['marcosjscabral@gmail.com'];
 const DEFAULT_PREMIUM_PLAN = {
   name: 'Traxbook Premium',
   description: 'Infinite upload, Cloud Sync, Anki Flashcards, Multi-device sync, and Exclusive Discounts.',
-  price_cents: 1990,
+  price_cents: 290,
   currency: 'usd',
   interval: 'month',
-  stripe_price_id: 'price_1TOIa5F0lxCQwtFq9pAZKIOH',
-  stripe_product_id: 'prod_UN2fqt7rN7Qmzz',
-  stripe_payment_link: 'https://buy.stripe.com/4gM7sLd9Y1iObeg35wcwg00',
+  stripe_price_id: 'price_1TQZZEF0lxCQwtFq9zKNq0iN',
+  stripe_product_id: 'prod_UPOLSAr2ZHNZiy',
+  stripe_payment_link: 'https://buy.stripe.com/cNi28rc5U7Hcbeg7lMcwg0b',
 };
 
 // Load saved premium plan from localStorage or use default
@@ -138,7 +138,8 @@ function loadPremiumPlan() {
 
 // Centralized map: stripe_price_id → Payment Link URL
 const STRIPE_PAYMENT_LINKS = {
-  'price_1TOIa5F0lxCQwtFq9pAZKIOH': 'https://buy.stripe.com/4gM7sLd9Y1iObeg35wcwg00',  // Premium Subscription
+  'price_1TQZZEF0lxCQwtFq9zKNq0iN': 'https://buy.stripe.com/cNi28rc5U7Hcbeg7lMcwg0b',  // Premium Subscription
+  'price_1TOIa5F0lxCQwtFq9pAZKIOH': 'https://buy.stripe.com/4gM7sLd9Y1iObeg35wcwg00',  // Old Premium Subscription
   'price_1TOIaIF0lxCQwtFqj99VXrl0': 'https://buy.stripe.com/5kQ00j4DsaTodmo35wcwg01',  // Dracula
   'price_1TOIaIF0lxCQwtFq9YDWh6dz': 'https://buy.stripe.com/14A8wPgmagdIgyA8pQcwg02',  // Sherlock Holmes
   'price_1TOIaQF0lxCQwtFqiDtYDNU8': 'https://buy.stripe.com/6oUfZhc5U8Lgeqs21scwg03',  // Access Combo
@@ -560,6 +561,7 @@ const App = () => {
   const [activeHomeTab, setActiveHomeTab] = useState('library');
   const [myFlashcards, setMyFlashcards] = useState([]);
   const [editingCard, setEditingCard] = useState(null);
+  const [flippedCardIds, setFlippedCardIds] = useState([]);
   const [autoSaveInterval, setAutoSaveInterval] = useState(1);
   const [marketplaceBooks, setMarketplaceBooks] = useState([]);
   const [catalogError, setCatalogError] = useState(null);
@@ -574,7 +576,7 @@ const App = () => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '', success: false, originId: null });
+  const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '', success: false, originId: null, locationInfo: '' });
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null, confirmText: 'Confirm' });
   const [cloudBooks, setCloudBooks] = useState([]);
 
@@ -762,9 +764,25 @@ const App = () => {
     }
   }, [activeHomeTab, user, isPremium]);
 
-  /* ─── Fetch Flashcards Globally ─── */
+  /* ─── Handle bfcache (Browser Back Button) ─── */
+  const [redirectingBookId, setRedirectingBookId] = useState(null);
+  
+  useEffect(() => {
+    const handlePageShow = (event) => {
+      if (event.persisted) {
+        setRedirectingBookId(null);
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
+
+  /* ─── Fetch Flashcards and Purchases Globally ─── */
+  const [purchasedBookIds, setPurchasedBookIds] = useState([]);
+
   useEffect(() => {
     if (user) {
+      // Fetch flashcards
       const fetchCards = async () => {
         try {
           const { data, error } = await supabase.from('flashcards').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
@@ -774,8 +792,22 @@ const App = () => {
         }
       };
       fetchCards();
+
+      // Fetch purchases
+      const fetchPurchases = async () => {
+        try {
+          const { data, error } = await supabase.from('purchases').select('book_id').eq('user_id', user.id);
+          if (!error && data) {
+            setPurchasedBookIds(data.map(p => p.book_id).filter(Boolean));
+          }
+        } catch (e) {
+          console.error('Failed to fetch purchases:', e);
+        }
+      };
+      fetchPurchases();
     } else {
       setMyFlashcards([]);
+      setPurchasedBookIds([]);
     }
   }, [user]);
 
@@ -873,16 +905,30 @@ const App = () => {
 
   /* ─── Handle Download from Public Library (Supabase Mock) ─── */
   const handleDownloadMarketplaceEpub = useCallback(async (book) => {
-    if (!book.free) {
+    // 1. Auth check
+    if (!book.free || book.premium_only) {
       if (!user) {
         setShowAuthModal(true);
         return;
       }
-      if (!isPremium) {
-        setShowUpgradeModal(true);
+    }
+
+    // 2. Premium-only check
+    if (book.premium_only && !isPremium) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    // 3. Purchase check for paid books (strictly database)
+    if (!book.free && !isAdmin) {
+      const hasPurchased = purchasedBookIds.includes(book.id);
+
+      if (!hasPurchased) {
+        alert('You need to purchase this book first to translate it.');
         return;
       }
     }
+
     if (!book.epub_url) {
       alert('The URL of this EPUB has not been configured in the database (Supabase Demo) yet.');
       return;
@@ -905,7 +951,7 @@ const App = () => {
     } finally {
       setLoading(false);
     }
-  }, [applyBookState, user, isPremium]);
+  }, [applyBookState, user, isPremium, library, purchasedBookIds, isAdmin]);
 
   /* ─── Handle file ─── */
   const handleFile = useCallback(async (file) => {
@@ -1143,7 +1189,7 @@ const App = () => {
     if (document.activeElement?.tagName === 'TEXTAREA' || document.activeElement?.tagName === 'INPUT') return;
     const text = selection.toString().trim();
     if (text.length > 0) {
-      setFlashcardModal({ show: true, source: text, translation: '', success: false });
+      setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: null, locationInfo: '' });
     }
   }, [user]);
 
@@ -1161,7 +1207,7 @@ const App = () => {
     }
     // MANIFESTO: Plano gratuito pode salvar até 20 flashcards
     if (!isPremium && myFlashcards.length >= FREE_FLASHCARD_LIMIT) {
-      setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null });
+      setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null, locationInfo: '' });
       setShowUpgradeModal(true);
       return;
     }
@@ -1170,7 +1216,8 @@ const App = () => {
         user_id: user.id,
         source_text: flashcardModal.source,
         translated_text: flashcardModal.translation,
-        origin_id: flashcardModal.originId
+        origin_id: flashcardModal.originId,
+        location_info: flashcardModal.locationInfo
       }]).select();
       if (error) {
         if (error.code === '42P01') throw new Error("The 'flashcards' table doesn't exist yet on Supabase. Please create it!");
@@ -1181,7 +1228,7 @@ const App = () => {
       }
       setFlashcardModal(p => ({ ...p, success: true }));
       setTimeout(() => {
-        setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null });
+        setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null, locationInfo: '' });
         window.getSelection()?.removeAllRanges();
       }, 1500);
     } catch (err) {
@@ -1633,7 +1680,7 @@ const App = () => {
             <div className="guide-content">
               <h1>📘 User Guide: <span className="wavy-underline">Traxbook</span></h1>
               <p className="guide-subtitle">Transforming your reading into active learning.</p>
-              
+
               <p className="guide-intro">
                 Welcome to <strong>Traxbook</strong>! This quick guide will help you navigate our platform and understand how to get the most out of your translation and study sessions.
               </p>
@@ -1675,7 +1722,7 @@ const App = () => {
                   <li><strong><span className="traxbook-tag">Traxbook</span> Drive:</strong> Automatic cloud synchronization. Start on your PC and continue on your tablet exactly where you left off.</li>
                   <li><strong>Unlimited Flashcards:</strong> Create as many flashcards as you want.</li>
                   <li><strong>Anki Integration:</strong> Export your flashcards in CSV format to practice in Anki.</li>
-                  <li><strong>Full Export:</strong> Download your translated book in EPUB format.<br/><span style={{fontSize: '0.9em', fontStyle: 'italic', color: 'var(--text-dim)'}}>Note: Every exported file includes the signature "Translated by [Email] via <span className="traxbook-tag">Traxbook</span>" to ensure authorship of your effort.</span></li>
+                  <li><strong>Full Export:</strong> Download your translated book in EPUB format.<br /><span style={{ fontSize: '0.9em', fontStyle: 'italic', color: 'var(--text-dim)' }}>Note: Every exported file includes the signature "Translated by [Email] via <span className="traxbook-tag">Traxbook</span>" to ensure authorship of your effort.</span></li>
                   <li><strong>Marketplace:</strong> Get a <strong>20% discount</strong> on all books in our classics library.</li>
                 </ul>
               </div>
@@ -1703,7 +1750,8 @@ const App = () => {
               </div>
 
               <div className="guide-footer">
-                <p>Questions or need support? Contact us through our customer portal.</p>
+                <p>Do you have any questions or need help? Contact us through our customer email: traxbookepub@gmail.com
+                  traxbook version 1.2 - 04/2026  </p>
               </div>
             </div>
           </section>
@@ -1725,7 +1773,7 @@ const App = () => {
                 <div className="pricing-card-header">
                   <h3>Free</h3>
                   <div className="pricing-price">
-                    <span className="pricing-amount">$0</span>
+                    <span className="pricing-amount">R$0</span>
                     <span className="pricing-period">forever</span>
                   </div>
                 </div>
@@ -1748,7 +1796,7 @@ const App = () => {
                 <div className="pricing-card-header">
                   <h3><Icons.Crown /> {PREMIUM_PLAN.name}</h3>
                   <div className="pricing-price">
-                    <span className="pricing-amount">${(PREMIUM_PLAN.price_cents / 100).toFixed(2)}</span>
+                    <span className="pricing-amount">R${(PREMIUM_PLAN.price_cents / 100).toFixed(2)}</span>
                     <span className="pricing-period">/month</span>
                   </div>
                 </div>
@@ -1806,7 +1854,7 @@ const App = () => {
                   <input value={PREMIUM_PLAN.name} onChange={(e) => setPREMIUM_PLAN(p => ({ ...p, name: e.target.value }))} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Price (cents) → ${(PREMIUM_PLAN.price_cents / 100).toFixed(2)}</label>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Price (cents) → R${(PREMIUM_PLAN.price_cents / 100).toFixed(2)}</label>
                   <input type="number" value={PREMIUM_PLAN.price_cents} onChange={(e) => setPREMIUM_PLAN(p => ({ ...p, price_cents: Number(e.target.value) }))} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                 </div>
                 <div>
@@ -1965,7 +2013,7 @@ const App = () => {
                 {!adminEditingBook.free && (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
-                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Price (cents) → ${((adminEditingBook.price_cents || 0) / 100).toFixed(2)}</label>
+                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Price (cents) → R${((adminEditingBook.price_cents || 0) / 100).toFixed(2)}</label>
                       <input type="number" value={adminEditingBook.price_cents || 0} onChange={(e) => setAdminEditingBook(p => ({ ...p, price_cents: Number(e.target.value) }))} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                     </div>
                     <div>
@@ -2107,7 +2155,7 @@ const App = () => {
               Load your EPUB file and start translating instantly.
               {isPremium
                 ? "All your progress is securely saved in the cloud (Traxbook Drive)."
-                : "All your progress is saved offline in your browser."}
+                : " All your progress is saved offline in your browser"}
             </p>
 
             {/* ─── Tabs Navigation ─── */}
@@ -2255,8 +2303,19 @@ const App = () => {
                     marketplaceBooks.map(book => {
                       // MANIFESTO: Descontos em livros para Premium
                       const displayPrice = isPremium
-                        ? `$${((book.price_cents || 0) * 0.8 / 100).toFixed(2)}` // 20% Discount
-                        : `$${((book.price_cents || 0) / 100).toFixed(2)}`;
+                        ? `R$${((book.price_cents || 0) * 0.8 / 100).toFixed(2)}` // 20% Discount
+                        : `R$${((book.price_cents || 0) / 100).toFixed(2)}`;
+
+                      // Check if book is already in local library (bought/downloaded)
+                      const mkBookId = btoa(unescape(encodeURIComponent(book.title + '||' + (book.author || '')))).replace(/[^a-zA-Z0-9]/g, '');
+                      const isDownloaded = library.some(l => l.id === mkBookId);
+                      
+                      // Check database purchase record
+                      const hasPurchased = purchasedBookIds.includes(book.id);
+                      
+                      // LOGIC CORRECTION: Paid books strictly follow the 'purchases' database table.
+                      // Free books are unlocked (but premium_only free books require isPremium).
+                      const isUnlocked = book.free ? (!book.premium_only || isPremium) : hasPurchased;
 
                       return (
                         <div key={book.id} className="mk-card">
@@ -2265,6 +2324,32 @@ const App = () => {
                               <div className="mk-premium-badge">
                                 <Icons.Lock /> Premium
                               </div>
+                            )}
+                            {isAdmin && !isUnlocked && (
+                              <button 
+                                className="btn btn-secondary"
+                                style={{ position: 'absolute', bottom: '8px', left: '8px', fontSize: '10px', padding: '4px 8px', zIndex: 10 }}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!user) return;
+                                  try {
+                                    const { error } = await supabase.from('purchases').insert({ 
+                                      user_id: user.id, 
+                                      book_id: book.id, 
+                                      status: 'completed',
+                                      amount_total: book.price_cents || 0,
+                                      currency: 'brl'
+                                    });
+                                    if (error) throw error;
+                                    setPurchasedBookIds([...purchasedBookIds, book.id]);
+                                    alert('✅ Compra simulada com sucesso!');
+                                  } catch (err) {
+                                    alert('Erro ao simular compra: ' + err.message);
+                                  }
+                                }}
+                              >
+                                🧪 Mock Buy
+                              </button>
                             )}
                           </div>
                           <div className="mk-info">
@@ -2279,8 +2364,11 @@ const App = () => {
                             <h4>{book.title}</h4>
                             <p>{book.author}</p>
                             <button
-                              className={`btn ${book.free || isPremium || (!book.premium_only && !book.free) ? (book.premium_only && !isPremium ? 'btn-secondary' : 'btn-primary') : 'btn-secondary'} mk-action-btn`}
-                              style={{ transition: 'all 0.2s ease' }}
+                              className={`btn ${redirectingBookId === book.id ? '' : (isUnlocked ? 'btn-success' : (book.premium_only ? 'btn-secondary' : 'btn-primary'))} mk-action-btn`}
+                              style={{ 
+                                transition: 'all 0.2s ease',
+                                ...(redirectingBookId === book.id ? { background: '#6366f1', color: '#fff' } : {}) 
+                              }}
                               onClick={(e) => {
                                 const btn = e.currentTarget;
                                 if (!user) {
@@ -2288,29 +2376,30 @@ const App = () => {
                                 } else if (book.premium_only && !isPremium) {
                                   // Premium-only book, user is not premium → go to pricing
                                   setCurrentView('pricing');
-                                } else if (!book.free && !book.premium_only && !isPremium) {
-                                  // Paid book, not premium-only → buy it
-                                  btn.style.background = '#6366f1';
-                                  btn.style.color = '#fff';
-                                  btn.textContent = 'Redirecting...';
+                                } else if (!book.free && !hasPurchased) {
+                                  // Paid book, not bought → buy it
+                                  setRedirectingBookId(book.id);
                                   const payLink = getPaymentLink(book.stripe_price_id, book.stripe_payment_link, user.id);
                                   if (payLink) {
                                     setTimeout(() => { window.location.href = payLink; }, 400);
                                   } else {
                                     btn.style.background = '#ef4444';
                                     btn.textContent = 'Not Configured';
-                                    setTimeout(() => { btn.style.background = ''; btn.textContent = `Buy ${displayPrice}`; }, 2000);
+                                    setTimeout(() => { 
+                                      setRedirectingBookId(null); 
+                                      btn.style.background = '';
+                                    }, 2000);
                                   }
                                 } else {
-                                  // Free or premium user → open
-                                  btn.style.background = '#10b981';
+                                  // Free, premium or already bought → open
+                                  btn.style.background = 'var(--success)';
                                   btn.style.color = '#fff';
                                   btn.textContent = 'Loading...';
                                   handleDownloadMarketplaceEpub(book);
                                 }
                               }}
                             >
-                              {book.premium_only && !isPremium ? '🔒 Premium Only' : book.free || isPremium ? 'Start Translating' : `Buy ${displayPrice}`}
+                              {redirectingBookId === book.id ? 'Redirecting...' : (book.premium_only && !isPremium ? '🔒 Premium Only' : isUnlocked ? 'Start Translating' : `Buy ${displayPrice}`)}
                             </button>
                           </div>
                         </div>
@@ -2347,68 +2436,82 @@ const App = () => {
                     <p style={{ gridColumn: '1 / -1', opacity: 0.5, textAlign: 'center', padding: '2rem' }}>You haven't created any flashcards yet. Select text while translating a book to add one.</p>
                   ) : (
                     myFlashcards.map(card => (
-                      <div key={card.id} className="fc-card glass">
-                        {editingCard?.id === card.id ? (
-                          <div className="fc-editor">
-                            <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Source</label>
-                            <input
-                              className="translation-input"
-                              value={editingCard.source_text}
-                              onChange={e => setEditingCard({ ...editingCard, source_text: e.target.value })}
-                              style={{ marginBottom: '0.5rem', background: 'rgba(0,0,0,0.1)' }}
-                            />
-                            <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Translation</label>
-                            <input
-                              className="translation-input"
-                              value={editingCard.translated_text}
-                              onChange={e => setEditingCard({ ...editingCard, translated_text: e.target.value })}
-                              style={{ marginBottom: '1rem' }}
-                            />
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                              <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => setEditingCard(null)}>Cancel</button>
-                              <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={async () => {
-                                try {
-                                  if (!editingCard.source_text.trim() || !editingCard.translated_text.trim()) return;
-                                  const { error } = await supabase.from('flashcards').update({ source_text: editingCard.source_text, translated_text: editingCard.translated_text }).eq('id', editingCard.id);
-                                  if (error) throw error;
-                                  setMyFlashcards(prev => prev.map(c => c.id === editingCard.id ? { ...c, source_text: editingCard.source_text, translated_text: editingCard.translated_text } : c));
-                                  setEditingCard(null);
-                                } catch (e) {
-                                  alert(e.message);
-                                }
-                              }}><Icons.Check /> Save</button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="fc-content">
-                              <div className="fc-source">{card.source_text}</div>
-                              <div className="fc-divider"></div>
-                              <div className="fc-translation">{card.translated_text}</div>
-                            </div>
-                            <div className="fc-actions">
-                              <button className="btn btn-ghost btn-sm" onClick={() => setEditingCard(card)} title="Edit"><Icons.Edit /></button>
-                              <button className="btn btn-ghost btn-sm" style={{ color: '#ef4444' }} onClick={() => {
-                                setConfirmModal({
-                                  show: true,
-                                  title: 'Delete Card?',
-                                  message: 'Are you sure you want to remove this flashcard?',
-                                  confirmText: 'Delete',
-                                  onConfirm: async () => {
+                      <div 
+                        key={card.id} 
+                        className={`fc-card glass ${flippedCardIds.includes(card.id) ? 'flipped' : ''}`}
+                        onClick={() => setFlippedCardIds(prev => prev.includes(card.id) ? prev.filter(id => id !== card.id) : [...prev, card.id])}
+                      >
+                        <div className="fc-inner">
+                          {editingCard?.id === card.id ? (
+                            <div className="fc-editor-wrapper" onClick={e => e.stopPropagation()}>
+                              <div className="fc-editor">
+                                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Source</label>
+                                <input
+                                  className="translation-input"
+                                  value={editingCard.source_text}
+                                  onChange={e => setEditingCard({ ...editingCard, source_text: e.target.value })}
+                                  style={{ marginBottom: '0.5rem', background: 'rgba(0,0,0,0.1)' }}
+                                />
+                                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Translation</label>
+                                <input
+                                  className="translation-input"
+                                  value={editingCard.translated_text}
+                                  onChange={e => setEditingCard({ ...editingCard, translated_text: e.target.value })}
+                                  style={{ marginBottom: '1rem' }}
+                                />
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                  <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => setEditingCard(null)}>Cancel</button>
+                                  <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={async () => {
                                     try {
-                                      const { error } = await supabase.from('flashcards').delete().eq('id', card.id);
+                                      if (!editingCard.source_text.trim() || !editingCard.translated_text.trim()) return;
+                                      const { error } = await supabase.from('flashcards').update({ source_text: editingCard.source_text, translated_text: editingCard.translated_text }).eq('id', editingCard.id);
                                       if (error) throw error;
-                                      setMyFlashcards(prev => prev.filter(c => c.id !== card.id));
+                                      setMyFlashcards(prev => prev.map(c => c.id === editingCard.id ? { ...c, source_text: editingCard.source_text, translated_text: editingCard.translated_text } : c));
+                                      setEditingCard(null);
                                     } catch (e) {
-                                      console.error("Delete error:", e);
-                                      alert("Error deleting from cloud: " + e.message);
+                                      alert(e.message);
                                     }
-                                  }
-                                });
-                              }} title="Delete"><Icons.Trash /></button>
+                                  }}><Icons.Check /> Save</button>
+                                </div>
+                              </div>
                             </div>
-                          </>
-                        )}
+                          ) : (
+                            <>
+                              <div className="fc-front">
+                                <div className="fc-content">
+                                  <div className="fc-source">{card.source_text}</div>
+                                </div>
+                              </div>
+                              <div className="fc-back">
+                                <div className="fc-content">
+                                  <div className="fc-translation">{card.translated_text}</div>
+                                </div>
+                                <div className="fc-actions">
+                                  <button className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); setEditingCard(card); }} title="Edit"><Icons.Edit /></button>
+                                  <button className="btn btn-ghost btn-sm" style={{ color: '#ef4444' }} onClick={(e) => {
+                                    e.stopPropagation();
+                                    setConfirmModal({
+                                      show: true,
+                                      title: 'Delete Card?',
+                                      message: 'Are you sure you want to remove this flashcard?',
+                                      confirmText: 'Delete',
+                                      onConfirm: async () => {
+                                        try {
+                                          const { error } = await supabase.from('flashcards').delete().eq('id', card.id);
+                                          if (error) throw error;
+                                          setMyFlashcards(prev => prev.filter(c => c.id !== card.id));
+                                        } catch (e) {
+                                          console.error("Delete error:", e);
+                                          alert("Error deleting from cloud: " + e.message);
+                                        }
+                                      }
+                                    });
+                                  }} title="Delete"><Icons.Trash /></button>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
                     ))
                   )}
@@ -2537,7 +2640,7 @@ const App = () => {
                         paragraph={p}
                         flashcards={myFlashcards}
                         onTranslationChange={(val) => handleTranslationChange(currentChapter, pi, val)}
-                        onSelect={(text) => setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: p.id })}
+                        onSelect={(text) => setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: p.id, locationInfo: `[${chapters[currentChapter]?.chapterLabel}]` })}
                       />
                     ))}
                   </React.Fragment>
@@ -2588,11 +2691,82 @@ const App = () => {
                   <p style={{ marginTop: '4px', fontSize: '11px' }}>Select text while reading to create one.</p>
                 </div>
               ) : (
-                <div className="flashcards-mini-list">
+                <div className="flashcards-mini-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {myFlashcards.map((fc, i) => (
-                    <div key={i} className="flashcard-mini-card">
-                      <strong>{fc.source_text}</strong>
-                      <span>{fc.translated_text}</span>
+                    <div 
+                      key={fc.id || i} 
+                      className={`fc-card ${flippedCardIds.includes(fc.id) ? 'flipped' : ''}`}
+                      onClick={() => setFlippedCardIds(prev => prev.includes(fc.id) ? prev.filter(id => id !== fc.id) : [...prev, fc.id])}
+                      style={{ minHeight: '100px' }}
+                    >
+                      <div className="fc-inner">
+                        {editingCard?.id === fc.id ? (
+                          <div className="fc-editor-wrapper" onClick={e => e.stopPropagation()} style={{ padding: '8px' }}>
+                            <div className="fc-editor">
+                              <input 
+                                value={editingCard.source_text} 
+                                onChange={e => setEditingCard(p => ({...p, source_text: e.target.value}))}
+                                placeholder="Source text"
+                                className="fc-editor-input"
+                              />
+                              <textarea 
+                                value={editingCard.translated_text} 
+                                onChange={e => setEditingCard(p => ({...p, translated_text: e.target.value}))}
+                                placeholder="Translation"
+                                className="fc-editor-input fc-editor-textarea"
+                              />
+                              <div className="fc-editor-actions">
+                                <button className="btn btn-ghost btn-sm" onClick={() => setEditingCard(null)}>Cancel</button>
+                                <button className="btn btn-primary btn-sm" onClick={handleSaveEditFlashcard}><Icons.Check size={14} /> Save</button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="fc-front">
+                              {fc.location_info && (
+                                <div style={{ position: 'absolute', top: '8px', right: '8px', fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                                  {fc.location_info}
+                                </div>
+                              )}
+                              <div className="fc-content">
+                                <div className="fc-source" style={{ fontSize: '14px' }}>{fc.source_text}</div>
+                              </div>
+                            </div>
+                            <div className="fc-back">
+                              {fc.location_info && (
+                                <div style={{ position: 'absolute', top: '8px', right: '8px', fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                                  {fc.location_info}
+                                </div>
+                              )}
+                              <div className="fc-content">
+                                <div className="fc-translation" style={{ fontSize: '14px' }}>{fc.translated_text}</div>
+                              </div>
+                              <div className="fc-actions" style={{ right: '8px', bottom: '6px' }}>
+                                <button className="btn btn-ghost btn-sm" style={{ padding: '2px 4px' }} onClick={(e) => { e.stopPropagation(); setEditingCard(fc); }} title="Edit"><Icons.Edit size={14} /></button>
+                                <button className="btn btn-ghost btn-sm" style={{ color: '#ef4444', padding: '2px 4px' }} onClick={(e) => {
+                                  e.stopPropagation();
+                                  setConfirmModal({
+                                    show: true,
+                                    title: 'Delete Card?',
+                                    message: 'Are you sure you want to remove this flashcard?',
+                                    confirmText: 'Delete',
+                                    onConfirm: async () => {
+                                      try {
+                                        const { error } = await supabase.from('flashcards').delete().eq('id', fc.id);
+                                        if (error) throw error;
+                                        setMyFlashcards(prev => prev.filter(c => c.id !== fc.id));
+                                      } catch (e) {
+                                        alert("Error: " + e.message);
+                                      }
+                                    }
+                                  });
+                                }} title="Delete"><Icons.Trash size={14} /></button>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
