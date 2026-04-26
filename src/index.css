@@ -1771,6 +1771,11 @@ body {
 .fc-card {
   perspective: 1000px;
   cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.fc-card:hover {
+  transform: translateY(-2px);
 }
 
 .fc-inner {
@@ -1804,12 +1809,7 @@ body {
 }
 
 .fc-card:hover .fc-front, .fc-card:hover .fc-back, .fc-card:hover .fc-editor-wrapper {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
-}
-
-.fc-card.flipped:hover .fc-back {
-  transform: rotateY(180deg) translateY(-2px);
 }
 
 .fc-content {
