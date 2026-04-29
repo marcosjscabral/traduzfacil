@@ -574,6 +574,7 @@ const App = () => {
   const [currentView, setCurrentView] = useState('home'); // 'home' | 'editor' | 'pricing' | 'admin'
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [pendingUpgradeModal, setPendingUpgradeModal] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '', success: false, originId: null, locationInfo: '' });
@@ -613,6 +614,14 @@ const App = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  /* ─── Open Upgrade Modal after login if PRO was clicked ─── */
+  useEffect(() => {
+    if (user && pendingUpgradeModal) {
+      setShowUpgradeModal(true);
+      setPendingUpgradeModal(false);
+    }
+  }, [user, pendingUpgradeModal]);
 
   // Fetch/create profile when user changes
   useEffect(() => {
@@ -766,7 +775,7 @@ const App = () => {
 
   /* ─── Handle bfcache (Browser Back Button) ─── */
   const [redirectingBookId, setRedirectingBookId] = useState(null);
-  
+
   useEffect(() => {
     const handlePageShow = (event) => {
       if (event.persisted) {
@@ -834,6 +843,15 @@ const App = () => {
     setProfile(null);
     setCurrentView('home');
   }, []);
+
+  const handleProButtonClick = useCallback(() => {
+    if (!user) {
+      setPendingUpgradeModal(true);
+      setShowAuthModal(true);
+    } else {
+      setShowUpgradeModal(true);
+    }
+  }, [user]);
 
   /* ═══════════════════ EXISTING HANDLERS ═══════════════════ */
 
@@ -1483,7 +1501,7 @@ const App = () => {
               </div>
               <h3 style={{ fontSize: '1.5rem', marginBottom: '8px' }}>Upgrade to Pro</h3>
               <p style={{ opacity: 0.8, marginBottom: '24px' }}>Unlock the full potential of your reading and learning experience.</p>
-              
+
               <div style={{ width: '100%', textAlign: 'left', marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ color: '#FFA500' }}><Icons.Cloud /></div>
@@ -1507,12 +1525,12 @@ const App = () => {
                 </div>
               </div>
 
-              <a 
+              <a
                 href={getPaymentLink(PREMIUM_PLAN.stripe_price_id, PREMIUM_PLAN.stripe_payment_link, user?.id)}
-                className="btn btn-primary btn-lg pro-button" 
+                className="btn btn-primary btn-lg pro-button"
                 style={{ width: '100%', justifyContent: 'center', textDecoration: 'none', padding: '14px' }}
               >
-                <Icons.Crown /> Subscribe Now - Only $2.90/mo
+                <Icons.Crown /> Subscribe Now - Only R$5,90/mo
               </a>
               <p style={{ fontSize: '0.8rem', marginTop: '12px', opacity: 0.6 }}>Cancel anytime. Secure payment via Stripe.</p>
             </div>
@@ -1617,10 +1635,11 @@ const App = () => {
 
         <div className={`header-actions ${mobileMenuOpen ? 'is-open' : ''}`}>
           {/* PRO Button for free users */}
-          {user && !isPremium && (
-            <button 
-              className="btn pro-button" 
-              onClick={() => setShowUpgradeModal(true)}
+          {/* PRO Button for everyone except premium users */}
+          {!isPremium && (
+            <button
+              className="btn pro-button"
+              onClick={handleProButtonClick}
               style={{ padding: '6px 12px', fontSize: '12px' }}
             >
               <Icons.Crown /> PRO
@@ -2351,10 +2370,10 @@ const App = () => {
                       // Check if book is already in local library (bought/downloaded)
                       const mkBookId = btoa(unescape(encodeURIComponent(book.title + '||' + (book.author || '')))).replace(/[^a-zA-Z0-9]/g, '');
                       const isDownloaded = library.some(l => l.id === mkBookId);
-                      
+
                       // Check database purchase record
                       const hasPurchased = purchasedBookIds.includes(book.id);
-                      
+
                       // LOGIC CORRECTION: Paid books strictly follow the 'purchases' database table.
                       // Free books are unlocked (but premium_only free books require isPremium).
                       const isUnlocked = book.free ? (!book.premium_only || isPremium) : hasPurchased;
@@ -2368,16 +2387,16 @@ const App = () => {
                               </div>
                             )}
                             {isAdmin && !isUnlocked && (
-                              <button 
+                              <button
                                 className="btn btn-secondary"
                                 style={{ position: 'absolute', bottom: '8px', left: '8px', fontSize: '10px', padding: '4px 8px', zIndex: 10 }}
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   if (!user) return;
                                   try {
-                                    const { error } = await supabase.from('purchases').insert({ 
-                                      user_id: user.id, 
-                                      book_id: book.id, 
+                                    const { error } = await supabase.from('purchases').insert({
+                                      user_id: user.id,
+                                      book_id: book.id,
                                       status: 'completed',
                                       amount_total: book.price_cents || 0,
                                       currency: 'brl'
@@ -2407,9 +2426,9 @@ const App = () => {
                             <p>{book.author}</p>
                             <button
                               className={`btn ${redirectingBookId === book.id ? '' : (isUnlocked ? 'btn-success' : (book.premium_only ? 'btn-secondary' : 'btn-primary'))} mk-action-btn`}
-                              style={{ 
+                              style={{
                                 transition: 'all 0.2s ease',
-                                ...(redirectingBookId === book.id ? { background: '#6366f1', color: '#fff' } : {}) 
+                                ...(redirectingBookId === book.id ? { background: '#6366f1', color: '#fff' } : {})
                               }}
                               onClick={(e) => {
                                 const btn = e.currentTarget;
@@ -2427,8 +2446,8 @@ const App = () => {
                                   } else {
                                     btn.style.background = '#ef4444';
                                     btn.textContent = 'Not Configured';
-                                    setTimeout(() => { 
-                                      setRedirectingBookId(null); 
+                                    setTimeout(() => {
+                                      setRedirectingBookId(null);
                                       btn.style.background = '';
                                     }, 2000);
                                   }
@@ -2478,8 +2497,8 @@ const App = () => {
                     <p style={{ gridColumn: '1 / -1', opacity: 0.5, textAlign: 'center', padding: '2rem' }}>You haven't created any flashcards yet. Select text while translating a book to add one.</p>
                   ) : (
                     myFlashcards.map(card => (
-                      <div 
-                        key={card.id} 
+                      <div
+                        key={card.id}
                         className={`fc-card glass ${flippedCardIds.includes(card.id) ? 'flipped' : ''}`}
                         onClick={() => setFlippedCardIds(prev => prev.includes(card.id) ? prev.filter(id => id !== card.id) : [...prev, card.id])}
                       >
@@ -2735,8 +2754,8 @@ const App = () => {
               ) : (
                 <div className="flashcards-mini-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {myFlashcards.map((fc, i) => (
-                    <div 
-                      key={fc.id || i} 
+                    <div
+                      key={fc.id || i}
                       className={`fc-card ${flippedCardIds.includes(fc.id) ? 'flipped' : ''}`}
                       onClick={() => setFlippedCardIds(prev => prev.includes(fc.id) ? prev.filter(id => id !== fc.id) : [...prev, fc.id])}
                       style={{ minHeight: '100px' }}
@@ -2745,15 +2764,15 @@ const App = () => {
                         {editingCard?.id === fc.id ? (
                           <div className="fc-editor-wrapper" onClick={e => e.stopPropagation()} style={{ padding: '8px' }}>
                             <div className="fc-editor">
-                              <input 
-                                value={editingCard.source_text} 
-                                onChange={e => setEditingCard(p => ({...p, source_text: e.target.value}))}
+                              <input
+                                value={editingCard.source_text}
+                                onChange={e => setEditingCard(p => ({ ...p, source_text: e.target.value }))}
                                 placeholder="Source text"
                                 className="fc-editor-input"
                               />
-                              <textarea 
-                                value={editingCard.translated_text} 
-                                onChange={e => setEditingCard(p => ({...p, translated_text: e.target.value}))}
+                              <textarea
+                                value={editingCard.translated_text}
+                                onChange={e => setEditingCard(p => ({ ...p, translated_text: e.target.value }))}
                                 placeholder="Translation"
                                 className="fc-editor-input fc-editor-textarea"
                               />
