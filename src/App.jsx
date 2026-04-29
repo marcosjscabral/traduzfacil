@@ -2855,10 +2855,19 @@ const App = () => {
 const SelectionTooltip = ({ onFlashcard }) => {
   const [tooltip, setTooltip] = useState(null); // { x, y, text }
   const hideTimer = useRef(null);
+  // Flag: when WE clear the selection to dismiss the native toolbar,
+  // the resulting selectionchange must NOT hide our tooltip.
+  const suppressNextHide = useRef(false);
 
   useEffect(() => {
     const handleSelectionChange = () => {
-      // Clear any pending hide
+      // If we triggered this selectionchange ourselves (via removeAllRanges),
+      // skip it so the tooltip stays visible.
+      if (suppressNextHide.current) {
+        suppressNextHide.current = false;
+        return;
+      }
+
       if (hideTimer.current) clearTimeout(hideTimer.current);
 
       // Small delay so the selection is fully committed (especially on mobile)
@@ -2882,11 +2891,18 @@ const SelectionTooltip = ({ onFlashcard }) => {
         // Get position from bounding rect of the range
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
+
+        // 1. Save tooltip state first (keeps our button visible)
         setTooltip({
           x: rect.left + rect.width / 2,
           y: rect.top - 10,
           text,
         });
+
+        // 2. Immediately clear native selection → Android toolbar disappears.
+        //    suppressNextHide prevents the resulting selectionchange from hiding us.
+        suppressNextHide.current = true;
+        window.getSelection().removeAllRanges();
       }, 50);
     };
 
@@ -2903,7 +2919,6 @@ const SelectionTooltip = ({ onFlashcard }) => {
     <div
       className="selection-flashcard-tooltip"
       style={{ left: tooltip.x, top: tooltip.y }}
-      // Prevent the tooltip click from collapsing the selection
       onMouseDown={(e) => e.preventDefault()}
       onPointerDown={(e) => e.preventDefault()}
     >
@@ -2912,7 +2927,6 @@ const SelectionTooltip = ({ onFlashcard }) => {
         onClick={() => {
           onFlashcard(tooltip.text);
           setTooltip(null);
-          window.getSelection()?.removeAllRanges();
         }}
       >
         📚 Flashcard
