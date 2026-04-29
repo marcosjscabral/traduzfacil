@@ -283,6 +283,25 @@ body {
   background: var(--accent-soft);
 }
 
+.pro-button {
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%) !important;
+  color: #002446 !important;
+  font-weight: 700 !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.pro-button:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4) !important;
+  filter: brightness(1.1);
+}
+
+.pro-button svg {
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1));
+}
+
 /* ============ MAIN CONTENT ============ */
 .app-main {
   max-width: 1400px;

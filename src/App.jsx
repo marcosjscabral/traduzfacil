@@ -1475,15 +1475,46 @@ const App = () => {
       {/* ═══ Upgrade Modal ═══ */}
       {showUpgradeModal && (
         <div className="modal-overlay" onClick={() => setShowUpgradeModal(false)}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content glass" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setShowUpgradeModal(false)}><Icons.X /></button>
             <div className="auth-modal-body">
-              <div className="auth-modal-icon premium-icon"><Icons.Crown /></div>
-              <h3>Upgrade to Pro</h3>
-              <p>Cloud sync, premium books, and multi-device access are exclusive to Pro subscribers.</p>
-              <button className="btn btn-primary btn-lg" onClick={() => { setShowUpgradeModal(false); setCurrentView('pricing'); }}>
-                <Icons.Star /> View Plans & Pricing
-              </button>
+              <div className="auth-modal-icon premium-icon" style={{ background: 'linear-gradient(135deg, #FFD700, #FFA500)', color: '#fff' }}>
+                <Icons.Crown />
+              </div>
+              <h3 style={{ fontSize: '1.5rem', marginBottom: '8px' }}>Upgrade to Pro</h3>
+              <p style={{ opacity: 0.8, marginBottom: '24px' }}>Unlock the full potential of your reading and learning experience.</p>
+              
+              <div style={{ width: '100%', textAlign: 'left', marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ color: '#FFA500' }}><Icons.Cloud /></div>
+                  <span style={{ fontSize: '0.95rem' }}><strong>Cloud Sync:</strong> Save your books to Traxbook Drive</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ color: '#FFA500' }}><Icons.Smartphone /></div>
+                  <span style={{ fontSize: '0.95rem' }}><strong>Multi-device:</strong> Read on any computer or tablet</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ color: '#FFA500' }}><Icons.Infinity /></div>
+                  <span style={{ fontSize: '0.95rem' }}><strong>Unlimited:</strong> Create as many flashcards as you want</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ color: '#FFA500' }}><Icons.Download /></div>
+                  <span style={{ fontSize: '0.95rem' }}><strong>EPUB Export:</strong> Download your translations as new ebooks</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ color: '#FFA500' }}><Icons.Star /></div>
+                  <span style={{ fontSize: '0.95rem' }}><strong>Discounts:</strong> 20% off on all Marketplace books</span>
+                </div>
+              </div>
+
+              <a 
+                href={getPaymentLink(PREMIUM_PLAN.stripe_price_id, PREMIUM_PLAN.stripe_payment_link, user?.id)}
+                className="btn btn-primary btn-lg pro-button" 
+                style={{ width: '100%', justifyContent: 'center', textDecoration: 'none', padding: '14px' }}
+              >
+                <Icons.Crown /> Subscribe Now - Only $2.90/mo
+              </a>
+              <p style={{ fontSize: '0.8rem', marginTop: '12px', opacity: 0.6 }}>Cancel anytime. Secure payment via Stripe.</p>
             </div>
           </div>
         </div>
@@ -1585,6 +1616,17 @@ const App = () => {
         </button>
 
         <div className={`header-actions ${mobileMenuOpen ? 'is-open' : ''}`}>
+          {/* PRO Button for free users */}
+          {user && !isPremium && (
+            <button 
+              className="btn pro-button" 
+              onClick={() => setShowUpgradeModal(true)}
+              style={{ padding: '6px 12px', fontSize: '12px' }}
+            >
+              <Icons.Crown /> PRO
+            </button>
+          )}
+
           {currentView === 'editor' && hasBook && (
             <>
               <select
