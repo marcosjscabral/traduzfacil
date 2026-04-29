@@ -1986,4 +1986,45 @@ mark.flashcard-highlight {
   .modal-content {
     padding: 28px 20px;
   }
+
+  /* ── Marketplace: 2 livros por linha no mobile ── */
+  .marketplace-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .mk-cover {
+    height: 160px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-color: var(--bg-warm);
+  }
+
+  .mk-info {
+    padding: 10px;
+  }
+
+  .mk-info h4 {
+    font-size: 12px;
+    margin-bottom: 2px;
+  }
+
+  .mk-info p {
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+
+  .mk-diff {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+
+  .mk-price-tag {
+    font-size: 10px;
+  }
+
+  .mk-action-btn {
+    font-size: 11px;
+    padding: 7px 4px;
+  }
 }
