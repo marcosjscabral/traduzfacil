@@ -576,7 +576,7 @@ const App = () => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '', success: false, originId: null, locationInfo: '' });
+  const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '', success: false, originId: null });
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null, confirmText: 'Confirm' });
   const [cloudBooks, setCloudBooks] = useState([]);
 
@@ -974,9 +974,18 @@ const App = () => {
       const { metadata: meta, chapters: chs } = await parseEpub(arrayBuffer);
       const id = btoa(unescape(encodeURIComponent(meta.title + '||' + meta.creator))).replace(/[^a-zA-Z0-9]/g, '');
 
-      // MANIFESTO: Usuários gratuitos podem fazer upload livremente.
-      // Arquivos ficam salvos apenas no navegador (IndexedDB local).
-      // Sem bloqueio de tempo — upload ilimitado para todos os logados.
+      // MANIFESTO (l.12 — "Um livro por vez"): usuários gratuitos têm direito a
+      // apenas 1 livro salvo no navegador por vez. Ao carregar qualquer novo
+      // arquivo (mesmo o mesmo livro), TODOS os dados anteriores são apagados e
+      // o usuário começa do zero. Premium e admins não têm esta restrição.
+      if (!isPremium && !isAdmin) {
+        const existing = await loadAllBooks();
+        for (const book of existing) {
+          await deleteBookData(book.id); // apaga tudo, sem exceção
+        }
+        setLibrary([]);
+      }
+
       await applyBookState(id, meta, chs);
     } catch (err) {
       console.error('Error processing EPUB:', err);
@@ -984,7 +993,7 @@ const App = () => {
     } finally {
       setLoading(false);
     }
-  }, [applyBookState, user]);
+  }, [applyBookState, user, isPremium, isAdmin]);
 
   /* ─── Manual Save Logic ─── */
   const chaptersRef = useRef(chapters);
@@ -1189,7 +1198,7 @@ const App = () => {
     if (document.activeElement?.tagName === 'TEXTAREA' || document.activeElement?.tagName === 'INPUT') return;
     const text = selection.toString().trim();
     if (text.length > 0) {
-      setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: null, locationInfo: '' });
+      setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: null });
     }
   }, [user]);
 
@@ -1207,7 +1216,7 @@ const App = () => {
     }
     // MANIFESTO: Plano gratuito pode salvar até 20 flashcards
     if (!isPremium && myFlashcards.length >= FREE_FLASHCARD_LIMIT) {
-      setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null, locationInfo: '' });
+      setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null });
       setShowUpgradeModal(true);
       return;
     }
@@ -1216,8 +1225,7 @@ const App = () => {
         user_id: user.id,
         source_text: flashcardModal.source,
         translated_text: flashcardModal.translation,
-        origin_id: flashcardModal.originId,
-        location_info: flashcardModal.locationInfo
+        origin_id: flashcardModal.originId
       }]).select();
       if (error) {
         if (error.code === '42P01') throw new Error("The 'flashcards' table doesn't exist yet on Supabase. Please create it!");
@@ -1228,7 +1236,7 @@ const App = () => {
       }
       setFlashcardModal(p => ({ ...p, success: true }));
       setTimeout(() => {
-        setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null, locationInfo: '' });
+        setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null });
         window.getSelection()?.removeAllRanges();
       }, 1500);
     } catch (err) {
@@ -1525,9 +1533,9 @@ const App = () => {
       )}
       {/* ═══ Flashcard Modal ═══ */}
       {flashcardModal.show && (
-        <div className="modal-overlay" onClick={() => setFlashcardModal({ show: false, source: '', translation: '', success: false })}>
+        <div className="modal-overlay" onClick={() => setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null })}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setFlashcardModal({ show: false, source: '', translation: '', success: false })}><Icons.X /></button>
+            <button className="modal-close" onClick={() => setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null })}><Icons.X /></button>
             <div className="auth-modal-body" style={{ textAlign: 'left', alignItems: 'flex-start' }}>
               <h3 style={{ marginBottom: '1rem' }}>Create Flashcard</h3>
               {flashcardModal.success ? (
@@ -1560,7 +1568,7 @@ const App = () => {
                     />
                   </div>
                   <div style={{ display: 'flex', gap: '1rem', width: '100%', justifyContent: 'center' }}>
-                    <button className="btn btn-secondary" style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setFlashcardModal({ show: false, source: '', translation: '', success: false })}>
+                    <button className="btn btn-secondary" style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null })}>
                       Cancel
                     </button>
                     <button className="btn btn-primary" style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }} onClick={handleSaveFlashcard}>
@@ -2640,7 +2648,7 @@ const App = () => {
                         paragraph={p}
                         flashcards={myFlashcards}
                         onTranslationChange={(val) => handleTranslationChange(currentChapter, pi, val)}
-                        onSelect={(text) => setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: p.id, locationInfo: `[${chapters[currentChapter]?.chapterLabel}]` })}
+                        onSelect={(text) => setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: p.id })}
                       />
                     ))}
                   </React.Fragment>
@@ -2724,21 +2732,11 @@ const App = () => {
                         ) : (
                           <>
                             <div className="fc-front">
-                              {fc.location_info && (
-                                <div style={{ position: 'absolute', top: '8px', right: '8px', fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                                  {fc.location_info}
-                                </div>
-                              )}
                               <div className="fc-content">
                                 <div className="fc-source" style={{ fontSize: '14px' }}>{fc.source_text}</div>
                               </div>
                             </div>
                             <div className="fc-back">
-                              {fc.location_info && (
-                                <div style={{ position: 'absolute', top: '8px', right: '8px', fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                                  {fc.location_info}
-                                </div>
-                              )}
                               <div className="fc-content">
                                 <div className="fc-translation" style={{ fontSize: '14px' }}>{fc.translated_text}</div>
                               </div>
