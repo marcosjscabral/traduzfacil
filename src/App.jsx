@@ -1811,9 +1811,9 @@ const App = () => {
               </div>
 
               <div className="guide-footer">
-                <p>Do you have any questions or need help? Contact us through our customer email: traxbookepub@gmail.com
-                  traxbook version 1.2 - 04/2026  </p>
-                <p> We are constantly improving this project, so instability may occur. If something doesn't work as expected, please contact our support team.</p>
+                <p>Do you have any questions or need help? Contact us through our customer email: traxbookepub@gmail.com</p>
+                <p>We are constantly improving this project, so instability may occur. If something doesn't work as expected, please contact our support team.</p>
+                <p>Traxbook version 1.2.1 - 04/2026  </p>
               </div>
             </div>
           </section>
