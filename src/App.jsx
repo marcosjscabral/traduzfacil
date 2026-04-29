@@ -2594,6 +2594,15 @@ const App = () => {
         {currentView === 'editor' && hasBook && (
           <section className="editor-layout">
 
+            {/* Floating tooltip for text selection → Flashcard (works on mobile) */}
+            {user && (
+              <SelectionTooltip
+                onFlashcard={(text) =>
+                  setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: null, locationInfo: '' })
+                }
+              />
+            )}
+
             {/* LEFT COLUMN: Table of Contents */}
             <aside className="editor-sidebar-left">
               <h4 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '12px', fontWeight: 600, letterSpacing: '1px' }}>
@@ -2838,6 +2847,76 @@ const App = () => {
           </section>
         )}
       </main>
+    </div>
+  );
+};
+
+/* ─────────────────── SELECTION FLASHCARD TOOLTIP ─────────────────── */
+const SelectionTooltip = ({ onFlashcard }) => {
+  const [tooltip, setTooltip] = useState(null); // { x, y, text }
+  const hideTimer = useRef(null);
+
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      // Clear any pending hide
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+
+      // Small delay so the selection is fully committed (especially on mobile)
+      hideTimer.current = setTimeout(() => {
+        const selection = window.getSelection();
+        if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+          setTooltip(null);
+          return;
+        }
+        // Skip if inside textarea/input
+        const anchorNode = selection.anchorNode;
+        if (!anchorNode) { setTooltip(null); return; }
+        const parentEl = anchorNode.nodeType === Node.TEXT_NODE ? anchorNode.parentElement : anchorNode;
+        if (parentEl?.closest('textarea, input')) { setTooltip(null); return; }
+        // Only show inside .source-text
+        if (!parentEl?.closest('.source-text')) { setTooltip(null); return; }
+
+        const text = selection.toString().trim();
+        if (text.length === 0) { setTooltip(null); return; }
+
+        // Get position from bounding rect of the range
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        setTooltip({
+          x: rect.left + rect.width / 2,
+          y: rect.top - 10,
+          text,
+        });
+      }, 50);
+    };
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionChange);
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    };
+  }, []);
+
+  if (!tooltip) return null;
+
+  return (
+    <div
+      className="selection-flashcard-tooltip"
+      style={{ left: tooltip.x, top: tooltip.y }}
+      // Prevent the tooltip click from collapsing the selection
+      onMouseDown={(e) => e.preventDefault()}
+      onPointerDown={(e) => e.preventDefault()}
+    >
+      <button
+        className="selection-flashcard-btn"
+        onClick={() => {
+          onFlashcard(tooltip.text);
+          setTooltip(null);
+          window.getSelection()?.removeAllRanges();
+        }}
+      >
+        📚 Flashcard
+      </button>
     </div>
   );
 };
