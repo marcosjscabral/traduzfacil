@@ -7,9 +7,14 @@
   "theme_color": "#f8f7f4",
   "dir": "ltr",
   "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
   "orientation": "any",
   "scope": "/",
   "start_url": "/",
+  "lang": "en",
   "categories": [
     "education",
     "productivity",
