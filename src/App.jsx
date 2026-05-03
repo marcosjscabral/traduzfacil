@@ -117,28 +117,37 @@ const ADMIN_EMAILS = ['marcosjscabral@gmail.com'];
 
 /* ─────────────────── STRIPE PRICING CONFIG ─────────────────── */
 const DEFAULT_PREMIUM_PLAN = {
-  name: 'Traxbook Premium',
+  name: 'TraxBook Premium',
   description: 'Infinite upload, Cloud Sync, Anki Flashcards, Multi-device sync, and Exclusive Discounts.',
-  price_cents: 290,
-  currency: 'usd',
+  price_cents: 590,
+  currency: 'brl',
   interval: 'month',
-  stripe_price_id: 'price_1TQZZEF0lxCQwtFq9zKNq0iN',
-  stripe_product_id: 'prod_UPOLSAr2ZHNZiy',
-  stripe_payment_link: 'https://buy.stripe.com/cNi28rc5U7Hcbeg7lMcwg0b',
+  stripe_price_id: 'price_1TQaFUF0lxCQwtFqphGyANtC',
+  stripe_product_id: 'prod_UPP38mXAutU8uz',
+  stripe_payment_link: 'https://buy.stripe.com/dRmaEX2vk3qW6Y05dEcwg0l',
 };
 
 // Load saved premium plan from localStorage or use default
 function loadPremiumPlan() {
   try {
     const saved = localStorage.getItem('traxbook_premium_plan');
-    if (saved) return { ...DEFAULT_PREMIUM_PLAN, ...JSON.parse(saved) };
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Clear stale cache if it points to an old/inactive price
+      if (parsed.stripe_price_id && parsed.stripe_price_id !== DEFAULT_PREMIUM_PLAN.stripe_price_id) {
+        localStorage.removeItem('traxbook_premium_plan');
+        return DEFAULT_PREMIUM_PLAN;
+      }
+      return { ...DEFAULT_PREMIUM_PLAN, ...parsed };
+    }
   } catch (e) { /* ignore */ }
   return DEFAULT_PREMIUM_PLAN;
 }
 
 // Centralized map: stripe_price_id → Payment Link URL
 const STRIPE_PAYMENT_LINKS = {
-  'price_1TQZZEF0lxCQwtFq9zKNq0iN': 'https://buy.stripe.com/cNi28rc5U7Hcbeg7lMcwg0b',  // Premium Subscription
+  'price_1TQaFUF0lxCQwtFqphGyANtC': 'https://buy.stripe.com/dRmaEX2vk3qW6Y05dEcwg0l',  // Premium Subscription (BRL R$5,90/mo)
+  'price_1TQZZEF0lxCQwtFq9zKNq0iN': 'https://buy.stripe.com/cNi28rc5U7Hcbeg7lMcwg0b',  // Legacy Premium (USD - INACTIVE)
   'price_1TOIa5F0lxCQwtFq9pAZKIOH': 'https://buy.stripe.com/4gM7sLd9Y1iObeg35wcwg00',  // Old Premium Subscription
   'price_1TOIaIF0lxCQwtFqj99VXrl0': 'https://buy.stripe.com/5kQ00j4DsaTodmo35wcwg01',  // Dracula
   'price_1TOIaIF0lxCQwtFq9YDWh6dz': 'https://buy.stripe.com/14A8wPgmagdIgyA8pQcwg02',  // Sherlock Holmes
