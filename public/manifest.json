@@ -11,7 +11,7 @@
   "scope": "/",
   "start_url": "/",
   "categories": ["education", "productivity", "utilities"],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/192x192_traxbook.png",
