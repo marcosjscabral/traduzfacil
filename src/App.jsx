@@ -1527,6 +1527,8 @@ const App = () => {
 
               <a
                 href={getPaymentLink(PREMIUM_PLAN.stripe_price_id, PREMIUM_PLAN.stripe_payment_link, user?.id)}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="btn btn-primary btn-lg pro-button"
                 style={{ width: '100%', justifyContent: 'center', textDecoration: 'none', padding: '14px' }}
               >
@@ -1886,7 +1888,7 @@ const App = () => {
                       btn.style.background = '#10b981';
                       btn.innerHTML = '✓ Redirecting to Stripe...';
                       setTimeout(() => {
-                        window.location.href = getPaymentLink(PREMIUM_PLAN.stripe_price_id, PREMIUM_PLAN.stripe_payment_link, user.id);
+                        window.open(getPaymentLink(PREMIUM_PLAN.stripe_price_id, PREMIUM_PLAN.stripe_payment_link, user.id), '_blank', 'noopener,noreferrer');
                       }, 500);
                     }
                   }}
@@ -2445,7 +2447,7 @@ const App = () => {
                                   setRedirectingBookId(book.id);
                                   const payLink = getPaymentLink(book.stripe_price_id, book.stripe_payment_link, user.id);
                                   if (payLink) {
-                                    setTimeout(() => { window.location.href = payLink; }, 400);
+                                    setTimeout(() => { window.open(payLink, '_blank', 'noopener,noreferrer'); }, 400);
                                   } else {
                                     btn.style.background = '#ef4444';
                                     btn.textContent = 'Not Configured';

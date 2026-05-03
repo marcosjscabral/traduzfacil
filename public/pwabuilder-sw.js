@@ -25,6 +25,10 @@ if (workbox.navigationPreload.isSupported()) {
 }
 
 self.addEventListener('fetch', (event) => {
+  // Skip external URLs — let the browser handle Stripe, OAuth, etc. natively
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+
   if (event.request.mode === 'navigate') {
     event.respondWith((async () => {
       try {
