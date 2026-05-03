@@ -1,0 +1,27 @@
+{
+  "background_color": "#ffffff",
+  "description": "The ultimate tool for progressive EPUB book translation. 100% offline, fast and professional. Open your EPUB and translate line by line.",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Traxbook",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "traxbook",
+  "start_url": "/",
+  "theme_color": "#f8f7f4",
+  "icons": [
+    {
+      "src": "https://traxbook.com/icon.svg",
+      "type": "image/svg+xml",
+      "isSquare": false,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 0,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    }
+  ],
+  "id": "traxbook "
+}
