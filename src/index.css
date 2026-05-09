@@ -228,6 +228,8 @@ body {
   transition: all var(--transition);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  text-align: center;
   gap: 6px;
   border: none;
   font-family: inherit;
@@ -1287,6 +1289,8 @@ body {
 .btn-google {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  text-align: center;
   gap: 10px;
   padding: 12px 24px;
   border: 1px solid var(--border);
@@ -1307,6 +1311,18 @@ body {
 .btn-google:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* ============ USER MENU (Header) ============ */
