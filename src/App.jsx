@@ -2627,13 +2627,13 @@ const App = () => {
                               }}
                               onClick={(e) => {
                                 const btn = e.currentTarget;
-                                if (!user) {
-                                  setShowAuthModal(true);
-                                } else if (book.premium_only && !isPremium) {
-                                  // Premium-only book, user is not premium → go to pricing
+                                if (book.premium_only && !isPremium) {
+                                  // Premium-only book → need login first, then pricing
+                                  if (!user) { setShowAuthModal(true); return; }
                                   setCurrentView('pricing');
                                 } else if (!book.free && !hasPurchased) {
-                                  // Paid book, not bought → buy it
+                                  // Paid book, not bought → need login, then buy
+                                  if (!user) { setShowAuthModal(true); return; }
                                   setRedirectingBookId(book.id);
                                   const payLink = getPaymentLink(book.stripe_price_id, book.stripe_payment_link, user.id);
                                   if (payLink) {
@@ -2647,7 +2647,7 @@ const App = () => {
                                     }, 2000);
                                   }
                                 } else {
-                                  // Free, premium or already bought → open
+                                  // Free or already bought → open directly (no auth needed)
                                   btn.style.background = 'var(--success)';
                                   btn.style.color = '#fff';
                                   btn.textContent = 'Loading...';
