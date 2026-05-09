@@ -1199,9 +1199,9 @@ const App = () => {
   }, []);
   /* ═══════════════════ FLASHCARDS HANDLERS ═══════════════════ */
   const handleEditorMouseUp = useCallback(() => {
-    // MANIFESTO: Todos os usuários logados podem criar flashcards.
-    // Plano gratuito: até 20 flashcards.
-    if (!user) return;
+    // MANIFESTO: Todos os usuários podem iniciar a criação de flashcards.
+    // O salvamento efetivo requer login.
+
 
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) return;
@@ -1216,7 +1216,8 @@ const App = () => {
 
   const handleSaveFlashcard = async () => {
     if (!user) {
-      alert('Sign in to save flashcards.');
+      // MANIFESTO: Ao tentar salvar sem login, fecha o modal de flashcard e abre o de login.
+      setFlashcardModal(p => ({ ...p, show: false }));
       setShowAuthModal(true);
       return;
     }
@@ -1756,7 +1757,7 @@ const App = () => {
                 <p>To ensure the best experience, follow these upload guidelines:</p>
                 <ul>
                   <li><strong>Single Format:</strong> <span className="traxbook-tag">Traxbook</span> exclusively processes <strong>.epub</strong> files.</li>
-                  <li><strong>Access:</strong> Uploading is available only for logged-in users.</li>
+                  <li><strong>Access:</strong> Anyone can upload and translate EPUBs.</li>
                   <li><strong>Frequency:</strong> You can upload <strong>unlimited books</strong>. Translations are saved in your browser's cache.</li>
                 </ul>
               </div>
@@ -1772,7 +1773,7 @@ const App = () => {
                 <h2>🗂️ Flashcards System</h2>
                 <p>Found a new word or a difficult expression?</p>
                 <ul>
-                  <li><strong>Save for review:</strong> Logged-in users can create flashcards during translation.</li>
+                  <li><strong>Save for review:</strong> Create flashcards during translation (requires login to save in the cloud).</li>
                   <li><strong>Free Limit:</strong> Save up to <strong>20 flashcards</strong> to reinforce your vocabulary.</li>
                 </ul>
               </div>
@@ -2599,13 +2600,11 @@ const App = () => {
           <section className="editor-layout">
 
             {/* Floating tooltip for text selection → Flashcard (works on mobile) */}
-            {user && (
-              <SelectionTooltip
-                onFlashcard={(text) =>
-                  setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: null, locationInfo: '' })
-                }
-              />
-            )}
+            <SelectionTooltip
+              onFlashcard={(text) =>
+                setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: null, locationInfo: '' })
+              }
+            />
 
             {/* LEFT COLUMN: Table of Contents */}
             <aside className="editor-sidebar-left">
