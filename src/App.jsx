@@ -589,6 +589,10 @@ const App = () => {
   const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '', success: false, originId: null, locationInfo: '' });
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null, confirmText: 'Confirm' });
   const [cloudBooks, setCloudBooks] = useState([]);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authMode, setAuthMode] = useState('signin'); // 'signin' | 'signup'
+  const [authActionLoading, setAuthActionLoading] = useState(false);
 
   /* ─── Admin State ─── */
   const [adminCatalog, setAdminCatalog] = useState([]);
@@ -852,6 +856,43 @@ const App = () => {
     setProfile(null);
     setCurrentView('home');
   }, []);
+
+  const handleEmailAuth = async (e) => {
+    e.preventDefault();
+    if (!email || !password) return alert('Please enter both email and password.');
+    setAuthActionLoading(true);
+    try {
+      if (authMode === 'signup') {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        alert('Registration successful! Please check your email for the confirmation link.');
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        setShowAuthModal(false);
+      }
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setAuthActionLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) return alert('Please enter your email first to receive the reset link.');
+    setAuthActionLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+      });
+      if (error) throw error;
+      alert('Password reset link sent to your email!');
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setAuthActionLoading(false);
+    }
+  };
 
   const handleProButtonClick = useCallback(() => {
     if (!user) {
@@ -1477,16 +1518,79 @@ const App = () => {
       {/* ═══ Auth Modal ═══ */}
       {showAuthModal && (
         <div className="modal-overlay" onClick={() => setShowAuthModal(false)}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
             <button className="modal-close" onClick={() => setShowAuthModal(false)}><Icons.X /></button>
             <div className="auth-modal-body">
               <div className="auth-modal-icon"><Icons.User /></div>
-              <h3>Sign in to Traxbook</h3>
-              <p>Sign in to save your progress to the cloud, access premium books, and sync across devices.</p>
-              <button className="btn-google" onClick={() => { signInWithGoogle(); setShowAuthModal(false); }}>
+              <h3>{authMode === 'signin' ? 'Sign in to Traxbook' : 'Create your account'}</h3>
+              <p style={{ marginBottom: '20px' }}>
+                {authMode === 'signin' 
+                  ? 'Access your books and sync your progress across all devices.' 
+                  : 'Start your journey with Traxbook and save your progress in the cloud.'}
+              </p>
+
+              <form onSubmit={handleEmailAuth} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  className="translation-input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  style={{ background: 'var(--bg-secondary)' }}
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  className="translation-input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  style={{ background: 'var(--bg-secondary)' }}
+                />
+                
+                {authMode === 'signin' && (
+                  <button 
+                    type="button" 
+                    className="btn-link" 
+                    onClick={handleForgotPassword}
+                    style={{ alignSelf: 'flex-end', fontSize: '12px', opacity: 0.7 }}
+                  >
+                    Forgot password?
+                  </button>
+                )}
+
+                <button 
+                  type="submit" 
+                  className="btn btn-primary" 
+                  disabled={authActionLoading}
+                  style={{ width: '100%', padding: '12px', marginTop: '8px' }}
+                >
+                  {authActionLoading ? 'Processing...' : (authMode === 'signin' ? 'Sign In' : 'Sign Up')}
+                </button>
+              </form>
+
+              <div style={{ margin: '20px 0', width: '100%', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                <span style={{ fontSize: '12px', opacity: 0.5 }}>OR</span>
+                <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+              </div>
+
+              <button className="btn-google" onClick={() => { signInWithGoogle(); setShowAuthModal(false); }} style={{ width: '100%' }}>
                 <Icons.Google />
                 Continue with Google
               </button>
+
+              <p style={{ marginTop: '24px', fontSize: '14px', opacity: 0.8 }}>
+                {authMode === 'signin' ? "Don't have an account?" : "Already have an account?"}
+                <button 
+                  className="btn-link" 
+                  style={{ marginLeft: '6px', fontWeight: 600, color: 'var(--accent)' }}
+                  onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}
+                >
+                  {authMode === 'signin' ? 'Sign Up' : 'Sign In'}
+                </button>
+              </p>
             </div>
           </div>
         </div>
