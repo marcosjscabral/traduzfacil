@@ -982,11 +982,7 @@ const App = () => {
 
   /* ─── Handle file ─── */
   const handleFile = useCallback(async (file) => {
-    // MANIFESTO: Apenas usuários logados podem fazer upload
-    if (!user) {
-      setShowAuthModal(true);
-      return;
-    }
+    // MANIFESTO: Usuários autenticados ou não podem fazer upload de arquivos EPUB livremente.
 
     // MANIFESTO: Aceitar upload apenas de arquivos .epub
     if (!file || !file.name.toLowerCase().endsWith('.epub')) {
@@ -1001,9 +997,9 @@ const App = () => {
       const { metadata: meta, chapters: chs } = await parseEpub(arrayBuffer);
       const id = btoa(unescape(encodeURIComponent(meta.title + '||' + meta.creator))).replace(/[^a-zA-Z0-9]/g, '');
 
-      // MANIFESTO: Usuários gratuitos podem fazer upload livremente.
+      // MANIFESTO: Usuários gratuitos (logados ou não) podem fazer upload livremente.
       // Arquivos ficam salvos apenas no navegador (IndexedDB local).
-      // Sem bloqueio de tempo — upload ilimitado para todos os logados.
+      // Sem bloqueio de tempo — upload ilimitado para todos.
       await applyBookState(id, meta, chs);
     } catch (err) {
       console.error('Error processing EPUB:', err);
@@ -1133,11 +1129,7 @@ const App = () => {
     e.preventDefault();
     setDragActive(false);
 
-    // MANIFESTO: Apenas usuários logados podem fazer upload
-    if (!user) {
-      setShowAuthModal(true);
-      return;
-    }
+    // MANIFESTO: Usuários autenticados ou não podem fazer upload de arquivos EPUB livremente.
 
     const file = e.dataTransfer.files[0];
     handleFile(file);
@@ -2263,8 +2255,7 @@ const App = () => {
                 <div
                   className={`drop-zone ${dragActive ? 'dragover' : ''}`}
                   onClick={() => {
-                    if (!user) setShowAuthModal(true);
-                    else fileInputRef.current?.click();
+                    fileInputRef.current?.click();
                   }}
                   onDragOver={onDragOver}
                   onDragLeave={onDragLeave}
@@ -2274,10 +2265,10 @@ const App = () => {
                     <Icons.Upload />
                   </div>
                   <span className="drop-text-main">
-                    {!user ? 'Upload your EPUB file.' : 'Drag your EPUB or click here'}
+                    Drag your EPUB or click here
                   </span>
                   <span className="drop-text-sub">
-                    {!user ? 'Authentication is required for uploads' : 'Only .epub files are accepted'}
+                    Only .epub files are accepted
                   </span>
                   <input
                     ref={fileInputRef}
