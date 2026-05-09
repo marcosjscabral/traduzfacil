@@ -9,10 +9,9 @@ Este manifesto define as regras de acesso, fair use e monetização da plataform
 ### 1. Acesso e Uploads
 *   **Apenas .epub**: O sistema aceita exclusivamente arquivos no formato EPUB.
 *   **Autenticação Obrigatória**: Pessoas não logadas **não podem** fazer upload de arquivos.
-*   **Fair Use (Usuários Gratuitos)**: Usuários logados no plano gratuito podem fazer upload de **1 arquivo a cada 7 dias**.
-    // Terá acesso livre para fazer upload de quantos arquivos quiser, mas só ficarão salvos no navegador. Não terá acesso ao que o usuário premium tiver.
-
-* **Flash Cards** usuários logados poderão salvar flashcards. No plano gratuito, o usuário poderá salvar até 20 flashcards.
+*   **Uploads gratuitos**: Usuários logados ou não podem fazer upload de livros livremente.
+*   **Um livro por vez**: o navegador armazenará apenas o último livro salvo, não mais que um. Caso o usuário carregue mais de um, esse vai sobrepor o outro.
+*   **Flash Cards** usuários logados poderão salvar flashcards. No plano gratuito, o usuário poderá salvar até 20 flashcards.
 
 ### 2. Recursos Premium (Gating)
 Os seguintes recursos são exclusivos para assinantes **Traxbook Premium**:
