@@ -1,4 +1,4 @@
-# Traxbook (TraduzFácil Pro)
+# Traxbook (Traxbook Pro)
 
 Traxbook is a professional SaaS platform designed for language learners who want to translate EPUB books paragraph-by-paragraph and practice with flashcards.
 
@@ -8,11 +8,9 @@ Este manifesto define as regras de acesso, fair use e monetização da plataform
 
 ### 1. Acesso e Uploads
 *   **Apenas .epub**: O sistema aceita exclusivamente arquivos no formato EPUB.
-*   **Autenticação Obrigatória**: Pessoas não logadas **não podem** fazer upload de arquivos.
-*   **Fair Use (Usuários Gratuitos)**: Usuários logados no plano gratuito podem fazer upload de **1 arquivo a cada 7 dias**.
-    // Terá acesso livre para fazer upload de quantos arquivos quiser, mas só ficarão salvos no navegador. Não terá acesso ao que o usuário premium tiver.
-
-* **Flash Cards** usuários logados poderão salvar flashcards. No plano gratuito, o usuário poderá salvar até 20 flashcards.
+*   **Acesso e Uploads Livres**: Usuários autenticados ou não podem fazer upload de arquivos EPUB livremente.
+*   **Um Livro por Vez**: O navegador armazenará apenas o último livro salvo. Caso o usuário carregue um novo arquivo, este substituirá o anterior no armazenamento local.
+*   **Flashcards**: Usuários logados podem salvar flashcards. No plano gratuito, o limite é de até 20 unidades.
 
 ### 2. Recursos Premium (Gating)
 Os seguintes recursos são exclusivos para assinantes **Traxbook Premium**:

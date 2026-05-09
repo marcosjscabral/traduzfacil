@@ -589,6 +589,11 @@ const App = () => {
   const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '', success: false, originId: null, locationInfo: '' });
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null, confirmText: 'Confirm' });
   const [cloudBooks, setCloudBooks] = useState([]);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authMode, setAuthMode] = useState('signin'); // 'signin' | 'signup'
+  const [authActionLoading, setAuthActionLoading] = useState(false);
+  const [showAuthSuccess, setShowAuthSuccess] = useState(false);
 
   /* ─── Admin State ─── */
   const [adminCatalog, setAdminCatalog] = useState([]);
@@ -622,6 +627,19 @@ const App = () => {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  /* ─── Detect Auth Success Redirect ─── */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hash = window.location.hash;
+    
+    if (params.get('signup_success') === 'true' || hash.includes('type=signup')) {
+      setShowAuthSuccess(true);
+      // Clean URL parameters and hash
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState(null, '', cleanUrl);
+    }
   }, []);
 
   /* ─── Open Upgrade Modal after login if PRO was clicked ─── */
@@ -853,6 +871,76 @@ const App = () => {
     setCurrentView('home');
   }, []);
 
+  const handleEmailAuth = async (e) => {
+    e.preventDefault();
+    if (!email || !password) return alert('Please enter both email and password.');
+    setAuthActionLoading(true);
+    try {
+      if (authMode === 'signup') {
+        const { error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            // Use absolute URL with protocol to avoid Supabase redirect errors
+            redirectTo: `${window.location.protocol}//${window.location.host}/?signup_success=true`
+          }
+        });
+        if (error) throw error;
+        
+        setShowAuthModal(false);
+        setConfirmModal({
+          show: true,
+          title: 'Verify your email',
+          message: 'Registration initiated! Please check your email and click the confirmation link to complete your account setup.',
+          confirmText: 'Got it!',
+          onConfirm: () => { }
+        });
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        setShowAuthModal(false);
+      }
+    } catch (err) {
+      setConfirmModal({
+        show: true,
+        title: 'Authentication Error',
+        message: err.message,
+        confirmText: 'OK',
+        onConfirm: () => { }
+      });
+    } finally {
+      setAuthActionLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) return alert('Please enter your email first to receive the reset link.');
+    setAuthActionLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.protocol}//${window.location.host}/`,
+      });
+      if (error) throw error;
+      setConfirmModal({
+        show: true,
+        title: 'Reset Link Sent',
+        message: 'A password reset link has been sent to your email! Please check your inbox.',
+        confirmText: 'OK',
+        onConfirm: () => { }
+      });
+    } catch (err) {
+      setConfirmModal({
+        show: true,
+        title: 'Error',
+        message: err.message,
+        confirmText: 'OK',
+        onConfirm: () => { }
+      });
+    } finally {
+      setAuthActionLoading(false);
+    }
+  };
+
   const handleProButtonClick = useCallback(() => {
     if (!user) {
       setPendingUpgradeModal(true);
@@ -904,11 +992,23 @@ const App = () => {
 
     setCurrentView('editor');
 
+    // MANIFESTO: Free users (logged or guest) can only keep 1 book in local library.
+    // Premium users can keep unlimited books.
+    if (!isPremium) {
+      // Delete all other books from IndexedDB before saving the new one
+      const existingBooks = await loadAllBooks();
+      for (const book of existingBooks) {
+        if (book.id !== id) {
+          await deleteBookData(book.id);
+        }
+      }
+    }
+
     // Update Library State
     await saveBookData(id, meta, chs);
     const newLib = await loadAllBooks();
     setLibrary(newLib);
-  }, [computeProgress]);
+  }, [computeProgress, isPremium]);
 
   // Save current chapter to localStorage automatically
   useEffect(() => {
@@ -982,11 +1082,7 @@ const App = () => {
 
   /* ─── Handle file ─── */
   const handleFile = useCallback(async (file) => {
-    // MANIFESTO: Apenas usuários logados podem fazer upload
-    if (!user) {
-      setShowAuthModal(true);
-      return;
-    }
+    // MANIFESTO: Usuários autenticados ou não podem fazer upload de arquivos EPUB livremente.
 
     // MANIFESTO: Aceitar upload apenas de arquivos .epub
     if (!file || !file.name.toLowerCase().endsWith('.epub')) {
@@ -1001,9 +1097,9 @@ const App = () => {
       const { metadata: meta, chapters: chs } = await parseEpub(arrayBuffer);
       const id = btoa(unescape(encodeURIComponent(meta.title + '||' + meta.creator))).replace(/[^a-zA-Z0-9]/g, '');
 
-      // MANIFESTO: Usuários gratuitos podem fazer upload livremente.
+      // MANIFESTO: Usuários gratuitos (logados ou não) podem fazer upload livremente.
       // Arquivos ficam salvos apenas no navegador (IndexedDB local).
-      // Sem bloqueio de tempo — upload ilimitado para todos os logados.
+      // Sem bloqueio de tempo — upload ilimitado para todos.
       await applyBookState(id, meta, chs);
     } catch (err) {
       console.error('Error processing EPUB:', err);
@@ -1133,11 +1229,7 @@ const App = () => {
     e.preventDefault();
     setDragActive(false);
 
-    // MANIFESTO: Apenas usuários logados podem fazer upload
-    if (!user) {
-      setShowAuthModal(true);
-      return;
-    }
+    // MANIFESTO: Usuários autenticados ou não podem fazer upload de arquivos EPUB livremente.
 
     const file = e.dataTransfer.files[0];
     handleFile(file);
@@ -1207,9 +1299,9 @@ const App = () => {
   }, []);
   /* ═══════════════════ FLASHCARDS HANDLERS ═══════════════════ */
   const handleEditorMouseUp = useCallback(() => {
-    // MANIFESTO: Todos os usuários logados podem criar flashcards.
-    // Plano gratuito: até 20 flashcards.
-    if (!user) return;
+    // MANIFESTO: Todos os usuários podem iniciar a criação de flashcards.
+    // O salvamento efetivo requer login.
+
 
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) return;
@@ -1224,7 +1316,8 @@ const App = () => {
 
   const handleSaveFlashcard = async () => {
     if (!user) {
-      alert('Sign in to save flashcards.');
+      // MANIFESTO: Ao tentar salvar sem login, fecha o modal de flashcard e abre o de login.
+      setFlashcardModal(p => ({ ...p, show: false }));
       setShowAuthModal(true);
       return;
     }
@@ -1478,22 +1571,111 @@ const App = () => {
     );
   }
 
+  // Auth Success Screen
+  if (showAuthSuccess) {
+    return (
+      <div className="app-container">
+        <div className="modal-overlay" style={{ background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="modal-content glass" style={{ maxWidth: '400px', textAlign: 'center', padding: '40px' }}>
+            <div className="auth-modal-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icons.Check />
+            </div>
+            <h2 style={{ marginBottom: '12px' }}>Email Confirmed!</h2>
+            <p style={{ opacity: 0.8, marginBottom: '32px' }}>
+              Your account is now active and you are successfully logged in to Traxbook.
+            </p>
+            <button 
+              className="btn btn-primary" 
+              style={{ width: '100%' }}
+              onClick={() => setShowAuthSuccess(false)}
+            >
+              Go to Library
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-container">
 
       {/* ═══ Auth Modal ═══ */}
       {showAuthModal && (
         <div className="modal-overlay" onClick={() => setShowAuthModal(false)}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
             <button className="modal-close" onClick={() => setShowAuthModal(false)}><Icons.X /></button>
             <div className="auth-modal-body">
               <div className="auth-modal-icon"><Icons.User /></div>
-              <h3>Sign in to Traxbook</h3>
-              <p>Sign in to save your progress to the cloud, access premium books, and sync across devices.</p>
-              <button className="btn-google" onClick={() => { signInWithGoogle(); setShowAuthModal(false); }}>
+              <h3>{authMode === 'signin' ? 'Sign in to Traxbook' : 'Create your account'}</h3>
+              <p style={{ marginBottom: '20px' }}>
+                {authMode === 'signin' 
+                  ? 'Access your books and sync your progress across all devices.' 
+                  : 'Start your journey with Traxbook and save your progress in the cloud.'}
+              </p>
+
+              <form onSubmit={handleEmailAuth} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  className="translation-input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  style={{ background: 'var(--bg-secondary)' }}
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  className="translation-input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  style={{ background: 'var(--bg-secondary)' }}
+                />
+                
+                {authMode === 'signin' && (
+                  <button 
+                    type="button" 
+                    className="btn-link" 
+                    onClick={handleForgotPassword}
+                    style={{ alignSelf: 'flex-end', fontSize: '12px', opacity: 0.7 }}
+                  >
+                    Forgot password?
+                  </button>
+                )}
+
+                <button 
+                  type="submit" 
+                  className="btn btn-primary" 
+                  disabled={authActionLoading}
+                  style={{ width: '100%', padding: '12px', marginTop: '8px' }}
+                >
+                  {authActionLoading ? 'Processing...' : (authMode === 'signin' ? 'Sign In' : 'Sign Up')}
+                </button>
+              </form>
+
+              <div style={{ margin: '20px 0', width: '100%', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                <span style={{ fontSize: '12px', opacity: 0.5 }}>OR</span>
+                <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+              </div>
+
+              <button className="btn-google" onClick={() => { signInWithGoogle(); setShowAuthModal(false); }} style={{ width: '100%' }}>
                 <Icons.Google />
                 Continue with Google
               </button>
+
+              <p style={{ marginTop: '24px', fontSize: '14px', opacity: 0.8 }}>
+                {authMode === 'signin' ? "Don't have an account?" : "Already have an account?"}
+                <button 
+                  className="btn-link" 
+                  style={{ marginLeft: '6px', fontWeight: 600, color: 'var(--accent)' }}
+                  onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}
+                >
+                  {authMode === 'signin' ? 'Sign Up' : 'Sign In'}
+                </button>
+              </p>
             </div>
           </div>
         </div>
@@ -1764,7 +1946,7 @@ const App = () => {
                 <p>To ensure the best experience, follow these upload guidelines:</p>
                 <ul>
                   <li><strong>Single Format:</strong> <span className="traxbook-tag">Traxbook</span> exclusively processes <strong>.epub</strong> files.</li>
-                  <li><strong>Access:</strong> Uploading is available only for logged-in users.</li>
+                  <li><strong>Access:</strong> Anyone can upload and translate EPUBs.</li>
                   <li><strong>Frequency:</strong> You can upload <strong>unlimited books</strong>. Translations are saved in your browser's cache.</li>
                 </ul>
               </div>
@@ -1780,7 +1962,7 @@ const App = () => {
                 <h2>🗂️ Flashcards System</h2>
                 <p>Found a new word or a difficult expression?</p>
                 <ul>
-                  <li><strong>Save for review:</strong> Logged-in users can create flashcards during translation.</li>
+                  <li><strong>Save for review:</strong> Create flashcards during translation (requires login to save in the cloud).</li>
                   <li><strong>Free Limit:</strong> Save up to <strong>20 flashcards</strong> to reinforce your vocabulary.</li>
                 </ul>
               </div>
@@ -2263,8 +2445,7 @@ const App = () => {
                 <div
                   className={`drop-zone ${dragActive ? 'dragover' : ''}`}
                   onClick={() => {
-                    if (!user) setShowAuthModal(true);
-                    else fileInputRef.current?.click();
+                    fileInputRef.current?.click();
                   }}
                   onDragOver={onDragOver}
                   onDragLeave={onDragLeave}
@@ -2274,10 +2455,10 @@ const App = () => {
                     <Icons.Upload />
                   </div>
                   <span className="drop-text-main">
-                    {!user ? 'Upload your EPUB file.' : 'Drag your EPUB or click here'}
+                    Drag your EPUB or click here
                   </span>
                   <span className="drop-text-sub">
-                    {!user ? 'Authentication is required for uploads' : 'Only .epub files are accepted'}
+                    Only .epub files are accepted
                   </span>
                   <input
                     ref={fileInputRef}
@@ -2446,13 +2627,13 @@ const App = () => {
                               }}
                               onClick={(e) => {
                                 const btn = e.currentTarget;
-                                if (!user) {
-                                  setShowAuthModal(true);
-                                } else if (book.premium_only && !isPremium) {
-                                  // Premium-only book, user is not premium → go to pricing
+                                if (book.premium_only && !isPremium) {
+                                  // Premium-only book → need login first, then pricing
+                                  if (!user) { setShowAuthModal(true); return; }
                                   setCurrentView('pricing');
                                 } else if (!book.free && !hasPurchased) {
-                                  // Paid book, not bought → buy it
+                                  // Paid book, not bought → need login, then buy
+                                  if (!user) { setShowAuthModal(true); return; }
                                   setRedirectingBookId(book.id);
                                   const payLink = getPaymentLink(book.stripe_price_id, book.stripe_payment_link, user.id);
                                   if (payLink) {
@@ -2466,7 +2647,7 @@ const App = () => {
                                     }, 2000);
                                   }
                                 } else {
-                                  // Free, premium or already bought → open
+                                  // Free or already bought → open directly (no auth needed)
                                   btn.style.background = 'var(--success)';
                                   btn.style.color = '#fff';
                                   btn.textContent = 'Loading...';
@@ -2608,13 +2789,11 @@ const App = () => {
           <section className="editor-layout">
 
             {/* Floating tooltip for text selection → Flashcard (works on mobile) */}
-            {user && (
-              <SelectionTooltip
-                onFlashcard={(text) =>
-                  setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: null, locationInfo: '' })
-                }
-              />
-            )}
+            <SelectionTooltip
+              onFlashcard={(text) =>
+                setFlashcardModal({ show: true, source: text, translation: '', success: false, originId: null, locationInfo: '' })
+              }
+            />
 
             {/* LEFT COLUMN: Table of Contents */}
             <aside className="editor-sidebar-left">
