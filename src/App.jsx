@@ -992,11 +992,23 @@ const App = () => {
 
     setCurrentView('editor');
 
+    // MANIFESTO: Free users (logged or guest) can only keep 1 book in local library.
+    // Premium users can keep unlimited books.
+    if (!isPremium) {
+      // Delete all other books from IndexedDB before saving the new one
+      const existingBooks = await loadAllBooks();
+      for (const book of existingBooks) {
+        if (book.id !== id) {
+          await deleteBookData(book.id);
+        }
+      }
+    }
+
     // Update Library State
     await saveBookData(id, meta, chs);
     const newLib = await loadAllBooks();
     setLibrary(newLib);
-  }, [computeProgress]);
+  }, [computeProgress, isPremium]);
 
   // Save current chapter to localStorage automatically
   useEffect(() => {
