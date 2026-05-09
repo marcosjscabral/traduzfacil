@@ -593,6 +593,7 @@ const App = () => {
   const [password, setPassword] = useState('');
   const [authMode, setAuthMode] = useState('signin'); // 'signin' | 'signup'
   const [authActionLoading, setAuthActionLoading] = useState(false);
+  const [showAuthSuccess, setShowAuthSuccess] = useState(false);
 
   /* ─── Admin State ─── */
   const [adminCatalog, setAdminCatalog] = useState([]);
@@ -626,6 +627,15 @@ const App = () => {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  /* ─── Detect Auth Success Redirect ─── */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('signup_success') === 'true') {
+      setShowAuthSuccess(true);
+      window.history.replaceState(null, '', window.location.pathname);
+    }
   }, []);
 
   /* ─── Open Upgrade Modal after login if PRO was clicked ─── */
@@ -863,9 +873,16 @@ const App = () => {
     setAuthActionLoading(true);
     try {
       if (authMode === 'signup') {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            redirectTo: window.location.origin + '?signup_success=true'
+          }
+        });
         if (error) throw error;
-        alert('Registration successful! Please check your email for the confirmation link.');
+        alert('Registration initiated! Please check your email and click the confirmation link to complete.');
+        setShowAuthModal(false);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -1507,6 +1524,32 @@ const App = () => {
         <div className="loading-screen">
           <div className="spinner-ring" />
           <p>{authLoading ? 'Loading...' : 'Extracting pages from the book...'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Auth Success Screen
+  if (showAuthSuccess) {
+    return (
+      <div className="app-container">
+        <div className="modal-overlay" style={{ background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="modal-content glass" style={{ maxWidth: '400px', textAlign: 'center', padding: '40px' }}>
+            <div className="auth-modal-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icons.Check />
+            </div>
+            <h2 style={{ marginBottom: '12px' }}>Email Confirmed!</h2>
+            <p style={{ opacity: 0.8, marginBottom: '32px' }}>
+              Your account is now active and you are successfully logged in to Traxbook.
+            </p>
+            <button 
+              className="btn btn-primary" 
+              style={{ width: '100%' }}
+              onClick={() => setShowAuthSuccess(false)}
+            >
+              Go to Library
+            </button>
+          </div>
         </div>
       </div>
     );
