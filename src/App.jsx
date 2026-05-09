@@ -632,9 +632,13 @@ const App = () => {
   /* ─── Detect Auth Success Redirect ─── */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('signup_success') === 'true') {
+    const hash = window.location.hash;
+    
+    if (params.get('signup_success') === 'true' || hash.includes('type=signup')) {
       setShowAuthSuccess(true);
-      window.history.replaceState(null, '', window.location.pathname);
+      // Clean URL parameters and hash
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState(null, '', cleanUrl);
     }
   }, []);
 
@@ -877,19 +881,33 @@ const App = () => {
           email, 
           password,
           options: {
-            redirectTo: window.location.origin + '?signup_success=true'
+            // Use absolute URL with protocol to avoid Supabase redirect errors
+            redirectTo: `${window.location.protocol}//${window.location.host}/?signup_success=true`
           }
         });
         if (error) throw error;
-        alert('Registration initiated! Please check your email and click the confirmation link to complete.');
+        
         setShowAuthModal(false);
+        setConfirmModal({
+          show: true,
+          title: 'Verify your email',
+          message: 'Registration initiated! Please check your email and click the confirmation link to complete your account setup.',
+          confirmText: 'Got it!',
+          onConfirm: () => { }
+        });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         setShowAuthModal(false);
       }
     } catch (err) {
-      alert(err.message);
+      setConfirmModal({
+        show: true,
+        title: 'Authentication Error',
+        message: err.message,
+        confirmText: 'OK',
+        onConfirm: () => { }
+      });
     } finally {
       setAuthActionLoading(false);
     }
@@ -900,12 +918,24 @@ const App = () => {
     setAuthActionLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.protocol}//${window.location.host}/`,
       });
       if (error) throw error;
-      alert('Password reset link sent to your email!');
+      setConfirmModal({
+        show: true,
+        title: 'Reset Link Sent',
+        message: 'A password reset link has been sent to your email! Please check your inbox.',
+        confirmText: 'OK',
+        onConfirm: () => { }
+      });
     } catch (err) {
-      alert(err.message);
+      setConfirmModal({
+        show: true,
+        title: 'Error',
+        message: err.message,
+        confirmText: 'OK',
+        onConfirm: () => { }
+      });
     } finally {
       setAuthActionLoading(false);
     }
