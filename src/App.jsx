@@ -206,58 +206,6 @@ async function callStripeAdmin(action, payload) {
   return data;
 }
 
-/* ─────────────────── MOCK MARKETPLACE (SUPABASE PREVIEW) ─────────────────── */
-const MOCK_MARKETPLACE = [
-  {
-    id: 'm1',
-    title: 'Dracula',
-    author: 'Bram Stoker',
-    difficulty: 'Advanced',
-    epub_url: 'https://raw.githubusercontent.com/IDPF/epub3-samples/master/30/dracula/dracula.epub',
-    cover_url: 'https://m.media-amazon.com/images/I/71B6uEITaWL._AC_UF1000,1000_QL80_.jpg',
-    free: false,
-    price_cents: 500,
-    stripe_price_id: 'price_1TOIaIF0lxCQwtFqj99VXrl0',
-    stripe_payment_link: 'https://buy.stripe.com/5kQ00j4DsaTodmo35wcwg01',
-    Language: 'English'
-  },
-  {
-    id: 'm2',
-    title: 'Sherlock Holmes',
-    author: 'Arthur Conan Doyle',
-    difficulty: 'Intermediate',
-    epub_url: 'https://raw.githubusercontent.com/IDPF/epub3-samples/master/30/sherlock-holmes/sherlock-holmes.epub',
-    cover_url: 'https://m.media-amazon.com/images/I/81B+GVD0tVL._AC_UF1000,1000_QL80_.jpg',
-    free: false,
-    price_cents: 500,
-    stripe_price_id: 'price_1TOIaIF0lxCQwtFq9YDWh6dz',
-    stripe_payment_link: 'https://buy.stripe.com/14A8wPgmagdIgyA8pQcwg02',
-    Language: 'English'
-  },
-  {
-    id: 'm3',
-    title: 'Alice in Wonderland',
-    author: 'Lewis Carroll',
-    difficulty: 'Beginner',
-    epub_url: 'https://raw.githubusercontent.com/IDPF/epub3-samples/master/30/alice/alice.epub',
-    cover_url: 'https://m.media-amazon.com/images/I/91tZzI+2YhL._AC_UF1000,1000_QL80_.jpg',
-    free: true,
-    price_cents: 0,
-    Language: 'English'
-  },
-  {
-    id: 'm4',
-    title: 'Moby Dick',
-    author: 'Herman Melville',
-    difficulty: 'Advanced',
-    epub_url: 'https://raw.githubusercontent.com/IDPF/epub3-samples/master/30/moby-dick/moby-dick.epub',
-    cover_url: 'https://m.media-amazon.com/images/I/81fH+x4A1GL._AC_UF1000,1000_QL80_.jpg',
-    free: true,
-    price_cents: 0,
-    Language: 'English'
-  }
-];
-
 /* ─────────────────── TEXT CHUNKER ─────────────────── */
 function splitIntoLines(text, maxChars = 100) {
   const words = text.split(/\s+/);
@@ -572,8 +520,6 @@ const App = () => {
   const [editingCard, setEditingCard] = useState(null);
   const [flippedCardIds, setFlippedCardIds] = useState([]);
   const [autoSaveInterval, setAutoSaveInterval] = useState(1);
-  const [marketplaceBooks, setMarketplaceBooks] = useState([]);
-  const [catalogError, setCatalogError] = useState(null);
   const fileInputRef = useRef(null);
   const [currentChapter, setCurrentChapter] = useState(0);
 
@@ -582,8 +528,6 @@ const App = () => {
   const [profile, setProfile] = useState(null);
   const [currentView, setCurrentView] = useState('home'); // 'home' | 'editor' | 'pricing' | 'admin'
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [pendingUpgradeModal, setPendingUpgradeModal] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [flashcardModal, setFlashcardModal] = useState({ show: false, source: '', translation: '', success: false, originId: null, locationInfo: '' });
@@ -605,7 +549,7 @@ const App = () => {
 
   const hasBook = chapters.length > 0;
   const isAdmin = useMemo(() => user && ADMIN_EMAILS.includes(user.email), [user]);
-  const isPremium = useMemo(() => isAdmin || profile?.is_premium === true, [profile, isAdmin]);
+  const isPremium = true;
 
   /* ═══════════════════ AUTH EFFECTS ═══════════════════ */
 
@@ -633,7 +577,7 @@ const App = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const hash = window.location.hash;
-    
+
     if (params.get('signup_success') === 'true' || hash.includes('type=signup')) {
       setShowAuthSuccess(true);
       // Clean URL parameters and hash
@@ -641,14 +585,6 @@ const App = () => {
       window.history.replaceState(null, '', cleanUrl);
     }
   }, []);
-
-  /* ─── Open Upgrade Modal after login if PRO was clicked ─── */
-  useEffect(() => {
-    if (user && pendingUpgradeModal) {
-      setShowUpgradeModal(true);
-      setPendingUpgradeModal(false);
-    }
-  }, [user, pendingUpgradeModal]);
 
   // Fetch/create profile when user changes
   useEffect(() => {
@@ -754,30 +690,6 @@ const App = () => {
     loadAllBooks().then(setLibrary).catch(console.warn);
   }, []);
 
-  /* ─── Fetch Supabase Catalog ─── */
-  useEffect(() => {
-    if (activeHomeTab === 'marketplace') {
-      const fetchCatalog = async () => {
-        try {
-          setCatalogError(null);
-          const { data, error } = await supabase.from('catalog').select('*');
-          if (error) throw error;
-          if (data && data.length > 0) {
-            setMarketplaceBooks(data);
-          } else {
-            setMarketplaceBooks(MOCK_MARKETPLACE);
-          }
-        } catch (e) {
-          console.error('Error fetching catalog, using mock:', e);
-          setMarketplaceBooks(MOCK_MARKETPLACE);
-          // Only show error if the user is admin and might need to fix DB
-          if (isAdmin) setCatalogError(e.message || JSON.stringify(e));
-        }
-      };
-      fetchCatalog();
-    }
-  }, [activeHomeTab]);
-
   /* ─── Fetch Cloud Drive Books ─── */
   useEffect(() => {
     if (activeHomeTab === 'library' && user && isPremium) {
@@ -877,8 +789,8 @@ const App = () => {
     setAuthActionLoading(true);
     try {
       if (authMode === 'signup') {
-        const { error } = await supabase.auth.signUp({ 
-          email, 
+        const { error } = await supabase.auth.signUp({
+          email,
           password,
           options: {
             // Use absolute URL with protocol to avoid Supabase redirect errors
@@ -886,7 +798,7 @@ const App = () => {
           }
         });
         if (error) throw error;
-        
+
         setShowAuthModal(false);
         setConfirmModal({
           show: true,
@@ -941,15 +853,6 @@ const App = () => {
     }
   };
 
-  const handleProButtonClick = useCallback(() => {
-    if (!user) {
-      setPendingUpgradeModal(true);
-      setShowAuthModal(true);
-    } else {
-      setShowUpgradeModal(true);
-    }
-  }, [user]);
-
   /* ═══════════════════ EXISTING HANDLERS ═══════════════════ */
 
   /* ─── Compute progress ─── */
@@ -992,17 +895,8 @@ const App = () => {
 
     setCurrentView('editor');
 
-    // MANIFESTO: Free users (logged or guest) can only keep 1 book in local library.
-    // Premium users can keep unlimited books.
-    if (!isPremium) {
-      // Delete all other books from IndexedDB before saving the new one
-      const existingBooks = await loadAllBooks();
-      for (const book of existingBooks) {
-        if (book.id !== id) {
-          await deleteBookData(book.id);
-        }
-      }
-    }
+    // Keep the active book available locally and preserve the full library.
+    // All users can work with their own books freely.
 
     // Update Library State
     await saveBookData(id, meta, chs);
@@ -1029,56 +923,6 @@ const App = () => {
       setLoading(false);
     }
   }, [applyBookState]);
-
-  /* ─── Handle Download from Public Library (Supabase Mock) ─── */
-  const handleDownloadMarketplaceEpub = useCallback(async (book) => {
-    // 1. Auth check
-    if (!book.free || book.premium_only) {
-      if (!user) {
-        setShowAuthModal(true);
-        return;
-      }
-    }
-
-    // 2. Premium-only check
-    if (book.premium_only && !isPremium) {
-      setShowUpgradeModal(true);
-      return;
-    }
-
-    // 3. Purchase check for paid books (strictly database)
-    if (!book.free && !isAdmin) {
-      const hasPurchased = purchasedBookIds.includes(book.id);
-
-      if (!hasPurchased) {
-        alert('You need to purchase this book first to translate it.');
-        return;
-      }
-    }
-
-    if (!book.epub_url) {
-      alert('The URL of this EPUB has not been configured in the database (Supabase Demo) yet.');
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await fetch(book.epub_url);
-      if (!res.ok) throw new Error('Download failed. The file may not exist in Storage or there is a CORS error.');
-      const arrayBuffer = await res.arrayBuffer();
-
-      const { metadata: meta, chapters: chs } = await parseEpub(arrayBuffer);
-      meta.title = book.title;
-      meta.cover_url = book.cover_url;
-
-      const id = btoa(unescape(encodeURIComponent(meta.title + '||' + meta.creator))).replace(/[^a-zA-Z0-9]/g, '');
-      await applyBookState(id, meta, chs);
-    } catch (err) {
-      console.error(err);
-      alert('Error downloading book: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [applyBookState, user, isPremium, library, purchasedBookIds, isAdmin]);
 
   /* ─── Handle file ─── */
   const handleFile = useCallback(async (file) => {
@@ -1131,10 +975,6 @@ const App = () => {
   const handleSaveToCloud = useCallback(async (isSilent = false) => {
     if (!user) {
       if (!isSilent) setShowAuthModal(true);
-      return;
-    }
-    if (!isPremium) {
-      if (!isSilent) setShowUpgradeModal(true);
       return;
     }
 
@@ -1193,7 +1033,7 @@ const App = () => {
     if (autoSaveInterval === 0 || status === 'Saved') return;
     const interval = setInterval(() => {
       if (status === 'Modified') {
-        if (isPremium) {
+        if (user) {
           handleSaveToCloud(true);
         } else {
           handleManualSave();
@@ -1201,7 +1041,7 @@ const App = () => {
       }
     }, autoSaveInterval * 60 * 1000);
     return () => clearInterval(interval);
-  }, [autoSaveInterval, status, isPremium, handleSaveToCloud, handleManualSave]);
+  }, [autoSaveInterval, status, user, handleSaveToCloud, handleManualSave]);
 
   /* ─── Translation change ─── */
   const handleTranslationChange = useCallback((chapterIdx, paraIdx, value) => {
@@ -1325,12 +1165,7 @@ const App = () => {
       alert('Please enter a translation.');
       return;
     }
-    // MANIFESTO: Plano gratuito pode salvar até 20 flashcards
-    if (!isPremium && myFlashcards.length >= FREE_FLASHCARD_LIMIT) {
-      setFlashcardModal({ show: false, source: '', translation: '', success: false, originId: null, locationInfo: '' });
-      setShowUpgradeModal(true);
-      return;
-    }
+    // Everyone can save flashcards freely.
     try {
       const { error, data } = await supabase.from('flashcards').insert([{
         user_id: user.id,
@@ -1360,11 +1195,6 @@ const App = () => {
     if (!user) {
       alert('Sign in to download your flashcards.');
       setShowAuthModal(true);
-      return;
-    }
-    // MANIFESTO: Pessoas Premium: Create flashcard to Anki
-    if (!isPremium) {
-      setShowUpgradeModal(true);
       return;
     }
     setLoading(true);
@@ -1584,8 +1414,8 @@ const App = () => {
             <p style={{ opacity: 0.8, marginBottom: '32px' }}>
               Your account is now active and you are successfully logged in to Traxbook.
             </p>
-            <button 
-              className="btn btn-primary" 
+            <button
+              className="btn btn-primary"
               style={{ width: '100%' }}
               onClick={() => setShowAuthSuccess(false)}
             >
@@ -1609,8 +1439,8 @@ const App = () => {
               <div className="auth-modal-icon"><Icons.User /></div>
               <h3>{authMode === 'signin' ? 'Sign in to Traxbook' : 'Create your account'}</h3>
               <p style={{ marginBottom: '20px' }}>
-                {authMode === 'signin' 
-                  ? 'Access your books and sync your progress across all devices.' 
+                {authMode === 'signin'
+                  ? 'Access your books and sync your progress across all devices.'
                   : 'Start your journey with Traxbook and save your progress in the cloud.'}
               </p>
 
@@ -1633,11 +1463,11 @@ const App = () => {
                   required
                   style={{ background: 'var(--bg-secondary)' }}
                 />
-                
+
                 {authMode === 'signin' && (
-                  <button 
-                    type="button" 
-                    className="btn-link" 
+                  <button
+                    type="button"
+                    className="btn-link"
                     onClick={handleForgotPassword}
                     style={{ alignSelf: 'flex-end', fontSize: '12px', opacity: 0.7 }}
                   >
@@ -1645,9 +1475,9 @@ const App = () => {
                   </button>
                 )}
 
-                <button 
-                  type="submit" 
-                  className="btn btn-primary" 
+                <button
+                  type="submit"
+                  className="btn btn-primary"
                   disabled={authActionLoading}
                   style={{ width: '100%', padding: '12px', marginTop: '8px' }}
                 >
@@ -1668,64 +1498,14 @@ const App = () => {
 
               <p style={{ marginTop: '24px', fontSize: '14px', opacity: 0.8 }}>
                 {authMode === 'signin' ? "Don't have an account?" : "Already have an account?"}
-                <button 
-                  className="btn-link" 
+                <button
+                  className="btn-link"
                   style={{ marginLeft: '6px', fontWeight: 600, color: 'var(--accent)' }}
                   onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}
                 >
                   {authMode === 'signin' ? 'Sign Up' : 'Sign In'}
                 </button>
               </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ═══ Upgrade Modal ═══ */}
-      {showUpgradeModal && (
-        <div className="modal-overlay" onClick={() => setShowUpgradeModal(false)}>
-          <div className="modal-content glass" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowUpgradeModal(false)}><Icons.X /></button>
-            <div className="auth-modal-body">
-              <div className="auth-modal-icon premium-icon" style={{ background: 'linear-gradient(135deg, #FFD700, #FFA500)', color: '#fff' }}>
-                <Icons.Crown />
-              </div>
-              <h3 style={{ fontSize: '1.5rem', marginBottom: '8px' }}>Upgrade to Pro</h3>
-              <p style={{ opacity: 0.8, marginBottom: '24px' }}>Unlock the full potential of your reading and learning experience.</p>
-
-              <div style={{ width: '100%', textAlign: 'left', marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ color: '#FFA500' }}><Icons.Cloud /></div>
-                  <span style={{ fontSize: '0.95rem' }}><strong>Cloud Sync:</strong> Save your books to Traxbook Drive</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ color: '#FFA500' }}><Icons.Smartphone /></div>
-                  <span style={{ fontSize: '0.95rem' }}><strong>Multi-device:</strong> Read on any computer or tablet</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ color: '#FFA500' }}><Icons.Infinity /></div>
-                  <span style={{ fontSize: '0.95rem' }}><strong>Unlimited:</strong> Create as many flashcards as you want</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ color: '#FFA500' }}><Icons.Download /></div>
-                  <span style={{ fontSize: '0.95rem' }}><strong>EPUB Export:</strong> Download your translations as new ebooks</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ color: '#FFA500' }}><Icons.Star /></div>
-                  <span style={{ fontSize: '0.95rem' }}><strong>Discounts:</strong> 20% off on all Marketplace books</span>
-                </div>
-              </div>
-
-              <a
-                href={getPaymentLink(PREMIUM_PLAN.stripe_price_id, PREMIUM_PLAN.stripe_payment_link, user?.id)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary btn-lg pro-button"
-                style={{ width: '100%', justifyContent: 'center', textDecoration: 'none', padding: '14px' }}
-              >
-                <Icons.Crown /> Subscribe Now - Only R$5,90/mo
-              </a>
-              <p style={{ fontSize: '0.8rem', marginTop: '12px', opacity: 0.6 }}>Cancel anytime. Secure payment via Stripe.</p>
             </div>
           </div>
         </div>
@@ -1827,18 +1607,6 @@ const App = () => {
         </button>
 
         <div className={`header-actions ${mobileMenuOpen ? 'is-open' : ''}`}>
-          {/* PRO Button for free users */}
-          {/* PRO Button for everyone except premium users */}
-          {!isPremium && (
-            <button
-              className="btn pro-button"
-              onClick={handleProButtonClick}
-              style={{ padding: '6px 12px', fontSize: '12px' }}
-            >
-              <Icons.Crown /> PRO
-            </button>
-          )}
-
           {currentView === 'editor' && hasBook && (
             <>
               <select
@@ -1854,16 +1622,14 @@ const App = () => {
                 <option value={10}>Auto-save: 10 min</option>
               </select>
 
-              {!isPremium && (
-                <button
-                  className={`btn btn-ghost manual-save-btn ${status === 'Modified' ? 'is-modified' : ''}`}
-                  onClick={handleManualSave}
-                  disabled={status === 'Saved' || status === 'Saving...'}
-                  title={status === 'Modified' ? "Save changes" : "All saved"}
-                >
-                  <Icons.Save /> {status === 'Modified' ? 'Save' : status}
-                </button>
-              )}
+              <button
+                className={`btn btn-ghost manual-save-btn ${status === 'Modified' ? 'is-modified' : ''}`}
+                onClick={handleManualSave}
+                disabled={status === 'Saved' || status === 'Saving...'}
+                title={status === 'Modified' ? "Save changes" : "All saved"}
+              >
+                <Icons.Save /> {status === 'Modified' ? 'Save' : status}
+              </button>
               <button
                 className="btn btn-ghost"
                 onClick={() => handleSaveToCloud()}
@@ -1873,16 +1639,9 @@ const App = () => {
                 <Icons.Cloud /> Save to Cloud
               </button>
 
-              {/* MANIFESTO: Download EPUB traduzido é exclusivo para Premium */}
-              {isPremium ? (
-                <button className="btn btn-ghost" onClick={() => exportAsEpub(metadata, chapters, user?.email)} title="Export translated EPUB">
-                  <Icons.Download /> Export EPUB
-                </button>
-              ) : (
-                <button className="btn btn-ghost" onClick={() => setShowUpgradeModal(true)} title="Premium feature — upgrade to export">
-                  <Icons.Lock /> Export EPUB
-                </button>
-              )}
+              <button className="btn btn-ghost" onClick={() => exportAsEpub(metadata, chapters, user?.email)} title="Export translated EPUB">
+                <Icons.Download /> Export EPUB
+              </button>
               <button className="btn btn-secondary" onClick={clearBook}>
                 <Icons.LogOut /> Exit
               </button>
@@ -1907,7 +1666,6 @@ const App = () => {
                     <div className="user-avatar-fallback"><Icons.User /></div>
                   )}
                   <span className="user-name">{profile?.display_name || user.email?.split('@')[0]}</span>
-                  {isPremium && <span className="pro-badge"><Icons.Crown /> Pro</span>}
                   <button className="btn btn-ghost btn-sm" onClick={signOut} title="Sign out">
                     <Icons.LogOut />
                   </button>
@@ -1999,7 +1757,7 @@ const App = () => {
                 <ol>
                   <li><strong>Consistency is key:</strong> Try to translate at least 5 paragraphs a day.</li>
                   <li><strong>Use Flashcards:</strong> Don't just save isolated words; save short sentences to understand the context.</li>
-                  <li><strong>Synchronize:</strong> If you study on the go, the Premium plan ensures your progress is never lost between devices.</li>
+                  <li><strong>Synchronize:</strong> Cloud sync keeps your progress available across devices without any subscription.</li>
                 </ol>
               </div>
 
@@ -2021,14 +1779,13 @@ const App = () => {
               <Icons.ArrowLeft /> Back
             </button>
             <div className="pricing-hero">
-              <h2>Choose Your <span className="gradient-text">Plan</span></h2>
-              <p>Unlock the full power of Traxbook to accelerate your language learning journey.</p>
+              <h2>Everything is <span className="gradient-text">free</span></h2>
+              <p>No subscription is required. You can upload EPUBs, translate, export, and save flashcards without paying for anything.</p>
             </div>
             <div className="pricing-grid">
-              {/* Free Plan */}
               <div className="pricing-card">
                 <div className="pricing-card-header">
-                  <h3>Free</h3>
+                  <h3>Free Access</h3>
                   <div className="pricing-price">
                     <span className="pricing-amount">R$0</span>
                     <span className="pricing-period">forever</span>
@@ -2036,56 +1793,12 @@ const App = () => {
                 </div>
                 <ul className="pricing-features">
                   <li><Icons.Check /> Upload unlimited EPUBs</li>
-                  <li><Icons.Check /> Translate offline in browser</li>
-                  <li><Icons.Check /> Up to 20 flashcards</li>
-                  <li><Icons.Check /> Access free public books</li>
-                  <li className="pricing-disabled"><Icons.X /> Export translated EPUB</li>
-                  <li className="pricing-disabled"><Icons.X /> Save to Cloud</li>
-                  <li className="pricing-disabled"><Icons.X /> Multi-device sync</li>
-                  <li className="pricing-disabled"><Icons.X /> Premium book library</li>
+                  <li><Icons.Check /> Translate directly in the browser</li>
+                  <li><Icons.Check /> Save flashcards and export them</li>
+                  <li><Icons.Check /> Keep your progress in the cloud when signed in</li>
+                  <li><Icons.Check /> Use your local library and cloud drive</li>
                 </ul>
-                <button className="btn btn-secondary btn-block" disabled>Current Plan</button>
-              </div>
-
-              {/* Pro Plan */}
-              <div className="pricing-card pricing-card-pro">
-                <div className="pricing-popular-tag">Most Popular</div>
-                <div className="pricing-card-header">
-                  <h3><Icons.Crown /> {PREMIUM_PLAN.name}</h3>
-                  <div className="pricing-price">
-                    <span className="pricing-amount">R${(PREMIUM_PLAN.price_cents / 100).toFixed(2)}</span>
-                    <span className="pricing-period">/month</span>
-                  </div>
-                </div>
-                <ul className="pricing-features">
-                  <li><Icons.Check /> Everything in Free</li>
-                  <li className="pricing-highlight"><Icons.Download /> Export translated EPUB</li>
-                  <li className="pricing-highlight"><Icons.Cloud /> Save to Cloud</li>
-                  <li className="pricing-highlight"><Icons.Smartphone /> Multi-device sync</li>
-                  <li className="pricing-highlight"><Icons.Infinity /> Unlimited premium books</li>
-                  <li className="pricing-highlight"><Icons.Zap /> Unlimited flashcards</li>
-                  <li><Icons.Shield /> Priority support</li>
-                </ul>
-                <button
-                  className="btn btn-primary btn-block btn-lg"
-                  data-stripe-price-id={PREMIUM_PLAN.stripe_price_id}
-                  style={{ transition: 'all 0.2s ease' }}
-                  onClick={(e) => {
-                    const btn = e.currentTarget;
-                    // MANIFESTO: Apenas pessoas logadas podem comprar plano premium
-                    if (!user) {
-                      setShowAuthModal(true);
-                    } else {
-                      btn.style.background = '#10b981';
-                      btn.innerHTML = '✓ Redirecting to Stripe...';
-                      setTimeout(() => {
-                        window.open(getPaymentLink(PREMIUM_PLAN.stripe_price_id, PREMIUM_PLAN.stripe_payment_link, user.id), '_blank', 'noopener,noreferrer');
-                      }, 500);
-                    }
-                  }}
-                >
-                  <Icons.Star /> Subscribe Now
-                </button>
+                <button className="btn btn-primary btn-block" onClick={() => setCurrentView('home')}>Start using it now</button>
               </div>
             </div>
           </section>
@@ -2409,10 +2122,7 @@ const App = () => {
               <span className="gradient-text">personalized translation workout.</span>
             </h2>
             <p>
-              Load your EPUB file and start translating instantly.
-              {isPremium
-                ? "All your progress is securely saved in the cloud (Traxbook Drive)."
-                : " All your progress is saved offline in your browser"}
+              Load your EPUB file and start translating instantly. Your progress is saved locally in your browser and in the cloud when you sign in.
             </p>
 
             {/* ─── Tabs Navigation ─── */}
@@ -2422,12 +2132,6 @@ const App = () => {
                 onClick={() => setActiveHomeTab('library')}
               >
                 <Icons.Library /> My Library and Uploads
-              </button>
-              <button
-                className={`home-tab ${activeHomeTab === 'marketplace' ? 'active' : ''}`}
-                onClick={() => setActiveHomeTab('marketplace')}
-              >
-                <Icons.Globe2 /> Public Library (Explore)
               </button>
               {user && (
                 <button
@@ -2469,7 +2173,7 @@ const App = () => {
                   />
                 </div>
 
-                {(!isPremium && library.length > 0) && (
+                {library.length > 0 && (
                   <div className="library-section">
                     <h3 className="library-title">Your Local Library</h3>
                     <div className="library-grid">
@@ -2488,7 +2192,7 @@ const App = () => {
                   </div>
                 )}
 
-                {user && isPremium && cloudBooks.length > 0 && (
+                {user && cloudBooks.length > 0 && (
                   <div className="library-section" style={{ marginTop: '2rem' }}>
                     <h3 className="library-title">
                       <Icons.Cloud /> Traxbook Cloud Drive
@@ -2535,150 +2239,13 @@ const App = () => {
               </div>
             )}
 
-            {/* ─── Tab Content: MARKETPLACE / PUBLIC ─── */}
-            {activeHomeTab === 'marketplace' && (
-              <div className="tab-pane fade-in">
-                <div className="marketplace-header">
-                  <h3>Discover Classics</h3>
-                  <p>Start your translation journey right now without downloading anything.</p>
-                </div>
-
-                <div className="marketplace-grid">
-
-                  {catalogError ? (
-                    <div style={{ gridColumn: '1 / -1', color: '#ff4d4f', padding: '1rem', background: '#ffe6e6', borderRadius: '8px' }}>
-                      <strong>Error reading from Supabase:</strong> {catalogError}
-                      <p style={{ marginTop: '10px', fontSize: '0.9em' }}>
-                        Tip: Go to the Supabase SQL Editor and run the command: <br />
-                        <code>ALTER TABLE catalog DISABLE ROW LEVEL SECURITY;</code>
-                      </p>
-                    </div>
-                  ) : marketplaceBooks.length === 0 ? (
-                    <p style={{ textAlign: 'center', opacity: 0.6, gridColumn: '1 / -1' }}>Loading cloud catalog or no books available...</p>
-                  ) : (
-                    marketplaceBooks.map(book => {
-                      // MANIFESTO: Descontos em livros para Premium
-                      const displayPrice = isPremium
-                        ? `R$${((book.price_cents || 0) * 0.8 / 100).toFixed(2)}` // 20% Discount
-                        : `R$${((book.price_cents || 0) / 100).toFixed(2)}`;
-
-                      // Check if book is already in local library (bought/downloaded)
-                      const mkBookId = btoa(unescape(encodeURIComponent(book.title + '||' + (book.author || '')))).replace(/[^a-zA-Z0-9]/g, '');
-                      const isDownloaded = library.some(l => l.id === mkBookId);
-
-                      // Check database purchase record
-                      const hasPurchased = purchasedBookIds.includes(book.id);
-
-                      // LOGIC CORRECTION: Paid books strictly follow the 'purchases' database table.
-                      // Free books are unlocked (but premium_only free books require isPremium).
-                      const isUnlocked = book.free ? (!book.premium_only || isPremium) : hasPurchased;
-
-                      return (
-                        <div key={book.id} className="mk-card">
-                          <div className="mk-cover" style={{ backgroundImage: `url(${book.cover_url || ''})` }}>
-                            {book.premium_only && (
-                              <div className="mk-premium-badge">
-                                <Icons.Lock /> Premium
-                              </div>
-                            )}
-                            {isAdmin && !isUnlocked && (
-                              <button
-                                className="btn btn-secondary"
-                                style={{ position: 'absolute', bottom: '8px', left: '8px', fontSize: '10px', padding: '4px 8px', zIndex: 10 }}
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  if (!user) return;
-                                  try {
-                                    const { error } = await supabase.from('purchases').insert({
-                                      user_id: user.id,
-                                      book_id: book.id,
-                                      status: 'completed',
-                                      amount_total: book.price_cents || 0,
-                                      currency: 'brl'
-                                    });
-                                    if (error) throw error;
-                                    setPurchasedBookIds([...purchasedBookIds, book.id]);
-                                    alert('✅ Compra simulada com sucesso!');
-                                  } catch (err) {
-                                    alert('Erro ao simular compra: ' + err.message);
-                                  }
-                                }}
-                              >
-                                🧪 Mock Buy
-                              </button>
-                            )}
-                          </div>
-                          <div className="mk-info">
-                            <div className="mk-meta-row">
-                              <span className={`mk-diff mode-${(book.difficulty || 'beginner').trim().toLowerCase()}`}>
-                                {book.difficulty || 'Beginner'}
-                              </span>
-                              <span className="mk-price-tag" style={book.free || book.premium_only ? { background: book.premium_only ? 'rgba(139,92,246,0.15)' : 'rgba(16,185,129,0.15)', color: book.premium_only ? '#8b5cf6' : '#10b981' } : {}}>
-                                {book.free ? 'Free' : book.premium_only ? '👑 Premium' : displayPrice}
-                              </span>
-                            </div>
-                            <h4>{book.title}</h4>
-                            <p>{book.author}</p>
-                            <button
-                              className={`btn ${redirectingBookId === book.id ? '' : (isUnlocked ? 'btn-success' : (book.premium_only ? 'btn-secondary' : 'btn-primary'))} mk-action-btn`}
-                              style={{
-                                transition: 'all 0.2s ease',
-                                ...(redirectingBookId === book.id ? { background: '#6366f1', color: '#fff' } : {})
-                              }}
-                              onClick={(e) => {
-                                const btn = e.currentTarget;
-                                if (book.premium_only && !isPremium) {
-                                  // Premium-only book → need login first, then pricing
-                                  if (!user) { setShowAuthModal(true); return; }
-                                  setCurrentView('pricing');
-                                } else if (!book.free && !hasPurchased) {
-                                  // Paid book, not bought → need login, then buy
-                                  if (!user) { setShowAuthModal(true); return; }
-                                  setRedirectingBookId(book.id);
-                                  const payLink = getPaymentLink(book.stripe_price_id, book.stripe_payment_link, user.id);
-                                  if (payLink) {
-                                    setTimeout(() => { window.open(payLink, '_blank', 'noopener,noreferrer'); }, 400);
-                                  } else {
-                                    btn.style.background = '#ef4444';
-                                    btn.textContent = 'Not Configured';
-                                    setTimeout(() => {
-                                      setRedirectingBookId(null);
-                                      btn.style.background = '';
-                                    }, 2000);
-                                  }
-                                } else {
-                                  // Free or already bought → open directly (no auth needed)
-                                  btn.style.background = 'var(--success)';
-                                  btn.style.color = '#fff';
-                                  btn.textContent = 'Loading...';
-                                  handleDownloadMarketplaceEpub(book);
-                                }
-                              }}
-                            >
-                              {redirectingBookId === book.id ? 'Redirecting...' : (book.premium_only && !isPremium ? '🔒 Premium Only' : isUnlocked ? 'Start Translating' : `Buy ${displayPrice}`)}
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* ─── Tab Content: FLASHCARDS ─── */}
             {activeHomeTab === 'flashcards' && user && (
               <div className="tab-pane fade-in">
                 <div className="marketplace-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <h3>My Flashcards</h3>
-                    {isPremium ? (
-                      <p>Review and edit the flashcards you created while reading.</p>
-                    ) : (
-                      <p>You have {myFlashcards.length}/{FREE_FLASHCARD_LIMIT} flashcards saved.{myFlashcards.length >= FREE_FLASHCARD_LIMIT ? ' ' : ''}
-                        {myFlashcards.length >= FREE_FLASHCARD_LIMIT && <span style={{ color: '#f59e0b', fontWeight: 600 }}>Limit reached — <button className="btn-link" style={{ color: '#f59e0b', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0, textDecoration: 'underline' }} onClick={() => setCurrentView('pricing')}>upgrade to Pro</button> for unlimited.</span>}
-                      </p>
-                    )}
+                    <p>You have {myFlashcards.length} flashcard{myFlashcards.length === 1 ? '' : 's'} saved. Everything is available for free.</p>
                   </div>
                   {myFlashcards.length > 0 && (
                     <button className="btn btn-secondary" onClick={handleDownloadCSV} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -2779,7 +2346,7 @@ const App = () => {
             <div className="features-strip">
               <div className="feature-item"><Icons.Shield /> Offline-first</div>
               <div className="feature-item"><Icons.Zap /> Instant parsing</div>
-              <div className="feature-item"><Icons.Cloud /> Cloud sync (Pro)</div>
+              <div className="feature-item"><Icons.Cloud /> Cloud sync included</div>
             </div>
           </section>
         )}
